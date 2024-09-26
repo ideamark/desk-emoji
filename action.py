@@ -98,7 +98,7 @@ def act_curiosity(cmd):
     y_offset = random.choice([y_value * -1, y_value])
     cmd.send(f'head_move {x_offset} {y_offset} 20')
     look_side(x_offset)
-    cmd.send(f'head_move {x_offset * -2} 0 20')
+    cmd.send(f'head_move {x_offset * -2} 10 15')
     cmd.send('head_center')
     cmd.send('eye_blink')
 
@@ -122,6 +122,6 @@ def act_emotion(cmd, emotion):
 if __name__ == '__main__':
     cmd = CmdClient()
     speech = Speech()
-
+    print('\nPerforming...\n')
     act_introduce(cmd, speech)
     act_random(cmd, loop=True)

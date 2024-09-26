@@ -22,7 +22,6 @@ Desk-Emoji is a truly open-source AI desktop robot featuring an emoji screen, a 
   * `python3 -m venv .venv`
   * `source .venv/bin/activate`
   * `pip3 install -r requirements.txt`
-  * Download model: `python3 download.py`
   * Edit `settings.py` to set API keys.
 * Test robot
 

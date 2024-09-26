@@ -13,7 +13,7 @@ from settings import *
 
 
 # Set conversation memory
-memory = ConversationBufferMemory(memory_key="chat_history")
+memory = ConversationBufferMemory(buffer_key="chat_history")
 max_memory = 30
 
 ## Set logger
@@ -213,7 +213,7 @@ def chat(question):
     logger.info(f"You: {question}")
     memory_content = memory.load_memory_variables(inputs={})
     history = memory_content.get('chat_history', [])
-    history_messages = history.split('\n')[max_memory*-2:]
+    history_messages = history[max_memory*-2:]
     answer, emotion = get_completion(temperature=1, history_messages=history_messages, prompt=question)
     memory.chat_memory.add_user_message(question)
     memory.chat_memory.add_ai_message(answer)
