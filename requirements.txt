@@ -1,0 +1,8 @@
+numpy
+openai
+langchain
+pyserial
+inquirer
+SpeechRecognition
+PyAudio
+pygame
