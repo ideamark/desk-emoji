@@ -1,0 +1,8 @@
+numpy
+openai
+faster_whisper
+sounddevice
+py3-tts
+langchain
+pyserial
+inquirer
