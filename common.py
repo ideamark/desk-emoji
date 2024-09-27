@@ -3,6 +3,7 @@ import time
 import logging
 import inquirer
 import pygame
+import random
 import serial
 import serial.tools.list_ports
 import speech_recognition as sr
@@ -45,15 +46,18 @@ logger.addHandler(info_handler)
 logger.addHandler(stream_handler)
 
 
-class SpeechRecognition(object):
+class Listener(object):
 
-    def __init__(self):
+    def __init__(self, cmd):
+        self.cmd = cmd
         self.recognizer = sr.Recognizer()
+        self.executor = ThreadPoolExecutor(max_workers=1)
 
-    def recognize(self, audio_path='input.wav'):
+    def hear(self, audio_path='input.wav'):
         with sr.Microphone() as source:
             input("\n按回车开始说话 ")
             print("开始说话...")
+            self.executor.submit(act_random, self.cmd)
             audio_data = self.recognizer.listen(source)
             print("录音已完成")
             with open(audio_path, "wb") as audio_file:
@@ -67,7 +71,7 @@ class SpeechRecognition(object):
             return transcription.text
 
 
-class Speech(object):
+class Speaker(object):
     def __init__(self):
         self.executor = ThreadPoolExecutor(max_workers=1)
         pygame.mixer.init()
@@ -220,3 +224,94 @@ def chat(question):
     logger.info(f"Bot: {answer}")
     logger.info(f'Emo: {emotion}')
     return answer, emotion
+
+
+def act_random(cmd, loop=False):
+    def act():
+        random_num = random.random()
+        x = random.randint(-25, 25)
+        y = random.randint(-20, 50)
+        if random_num < 0.2:
+            selected_cmd = "head_roll"
+        else:
+            selected_cmd = f"head_move {x} {y} 10"
+
+        cmd.send(selected_cmd)
+        if "head_move" in selected_cmd:
+            if x > 0 and random_num < 0.8:
+                cmd.send('eye_right')
+            elif x < 0 and random_num < 0.8:
+                cmd.send('eye_left')
+            elif random_num < 0.4:
+                cmd.send('eye_happy')
+            else:
+                cmd.send('eye_blink')
+    act()
+    cmd.send('head_center')
+    while loop:
+        act()
+        time.sleep(random.randint(0, 8))
+
+
+def act_happy(cmd):
+    cmd.send('eye_happy')
+    command = random.choice(['head_nod', 'head_shake'])
+    cmd.send(command)
+    cmd.send('eye_blink')
+
+
+def act_sad(cmd):
+    cmd.send('head_move 0 100 10')
+    cmd.send('eye_sad')
+    cmd.send('head_shake')
+    cmd.send('head_center')
+    cmd.send('eye_blink')
+
+
+def act_anger(cmd):
+    cmd.send('eye_anger')
+    for i in range(3):
+        command = random.choice(['head_nod', 'head_shake'])
+        cmd.send(command)
+    cmd.send('eye_blink')
+
+
+def act_surprise(cmd):
+    cmd.send('eye_surprise')
+    cmd.send('head_shake')
+    time.sleep(1)
+    cmd.send('eye_blink')
+
+
+def act_curiosity(cmd):
+    def look_side(x_offset):
+        if x_offset > 0:
+            cmd.send('eye_right')
+        else:
+            cmd.send('eye_left')
+
+    x_value = random.randint(15, 25)
+    y_value = random.randint(15, 30)
+    x_offset = random.choice([x_value * -1, x_value])
+    y_offset = random.choice([y_value * -1, y_value])
+    cmd.send(f'head_move {x_offset} {y_offset} 20')
+    look_side(x_offset)
+    cmd.send(f'head_move {x_offset * -2} 10 15')
+    cmd.send('head_center')
+    cmd.send('eye_blink')
+
+
+def act_emotion(cmd, emotion):
+    if 'happy' in emotion:
+        act_happy(cmd)
+    elif 'sad' in emotion:
+        act_sad(cmd)
+    elif 'anger' in emotion:
+        act_anger(cmd)
+    elif 'surprise' in emotion or 'undetected' in emotion:
+        act_surprise(cmd)
+    elif 'curious' in emotion:
+        act_curiosity(cmd)
+    else:
+        act_random(cmd)
+    cmd.send('head_center')

@@ -5,17 +5,17 @@ from action import *
 
 
 def main():
-    question = record.recognize()
+    question = listener.hear()
     answer, emotion = chat(question)
-    speech.say(answer)
+    speaker.say(answer)
     threading.Thread(target=act_emotion, args=(cmd, emotion)).start()
 
 
 if __name__ == '__main__':
     logger.info('Initializing...')
-    record = SpeechRecognition()
-    speech = Speech()
     cmd = CmdClient()
+    listener = Listener(cmd)
+    speaker = Speaker()
     logger.info("Initialization complete.")
     try:
         while True:
