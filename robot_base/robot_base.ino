@@ -416,6 +416,7 @@ void print_angle() {
 void setup() {
 
   Serial.begin(115200);
+  Serial.flush();
   Serial.println("Initializing...");
 
   // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally

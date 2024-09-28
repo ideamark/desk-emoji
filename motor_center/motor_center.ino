@@ -1,6 +1,8 @@
 #include <Servo.h>
 
 
+#define X_CENTER 130
+#define Y_CENTER 70
 Servo servo_x;
 Servo servo_y;
 
@@ -12,7 +14,7 @@ void setup()
 
 void loop()
 {
-  servo_x.write(90);
-  servo_y.write(90);
+  servo_x.write(X_CENTER);
+  servo_y.write(Y_CENTER);
   delay(10);
 }
