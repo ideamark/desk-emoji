@@ -53,12 +53,12 @@ class Listener(object):
         self.recognizer = sr.Recognizer()
         self.executor = ThreadPoolExecutor(max_workers=1)
 
-    def hear(self, audio_path='input.wav'):
+    def hear(self, audio_path='input.wav', timeout=8):
         with sr.Microphone() as source:
             input("\n按回车开始说话 ")
             print("开始说话...")
             self.executor.submit(act_random, self.cmd)
-            audio_data = self.recognizer.listen(source)
+            audio_data = self.recognizer.listen(source, timeout=timeout)
             print("录音已完成")
             with open(audio_path, "wb") as audio_file:
                 audio_file.write(audio_data.get_wav_data())
@@ -226,7 +226,7 @@ def chat(question):
     return answer, emotion
 
 
-def act_random(cmd, loop=False):
+def act_random(cmd, loop=False, sleep_min=0, sleep_max=8):
     def act():
         random_num = random.random()
         x = random.randint(-25, 25)
@@ -250,7 +250,7 @@ def act_random(cmd, loop=False):
     cmd.send('head_center')
     while loop:
         act()
-        time.sleep(random.randint(0, 8))
+        time.sleep(random.randint(sleep_min, sleep_max))
 
 
 def act_happy(cmd):
@@ -270,7 +270,7 @@ def act_sad(cmd):
 
 def act_anger(cmd):
     cmd.send('eye_anger')
-    for i in range(3):
+    for i in range(2):
         command = random.choice(['head_nod', 'head_shake'])
         cmd.send(command)
     cmd.send('eye_blink')

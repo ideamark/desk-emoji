@@ -31,4 +31,4 @@ if __name__ == '__main__':
     speaker = Speaker()
     print('\nPerforming...\n')
     act_introduce(cmd, speaker)
-    act_random(cmd, loop=True)
+    act_random(cmd, loop=True, sleep_min=3)
