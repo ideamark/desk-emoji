@@ -1,8 +1,8 @@
-numpy
-openai
-langchain
-pyserial
+setuptools
+openai == 1.51.2
+langchain == 0.3.3
+pyserial == 3.4
 inquirer
-SpeechRecognition
+SpeechRecognition == 3.10.0
 PyAudio
-pygame
+pygame == 2.5.2

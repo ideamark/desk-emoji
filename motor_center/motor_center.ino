@@ -1,7 +1,7 @@
 #include <Servo.h>
 
 
-#define X_CENTER 130
+#define X_CENTER 90
 #define Y_CENTER 70
 Servo servo_x;
 Servo servo_y;

@@ -3,6 +3,7 @@ import time
 import logging
 import inquirer
 import pygame
+import platform
 import random
 import serial
 import serial.tools.list_ports
@@ -99,8 +100,7 @@ class CmdClient(object):
         logger.info("Available serial ports:")
         available_ports = self.list_serial_ports()
         if not available_ports:
-            logger.error("No serial ports found.")
-            return
+            raise ValueError("No serial ports found.")
         self.selected_port = self.select_serial_port(available_ports)
         self.ser = serial.Serial(self.selected_port, self.baud_rate, timeout=1)
         logger.info(f"Connected to {self.selected_port} at {self.baud_rate} baud rate.")
@@ -110,7 +110,7 @@ class CmdClient(object):
         ports = serial.tools.list_ports.comports()
         available_ports = []
         for port in ports:
-            if "serial" in port.device.lower():
+            if platform.system() == 'Windows' or  "serial" in port.device.lower():
                 available_ports.append(port.device)
                 logger.info(port.device)
         return available_ports
