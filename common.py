@@ -96,14 +96,13 @@ class Speaker(object):
 class CmdClient(object):
 
     def __init__(self, baud_rate=115200):
-        self.baud_rate = baud_rate
         logger.info("Available serial ports:")
         available_ports = self.list_serial_ports()
         if not available_ports:
             raise ValueError("No serial ports found.")
-        self.selected_port = self.select_serial_port(available_ports)
-        self.ser = serial.Serial(self.selected_port, self.baud_rate, timeout=1)
-        logger.info(f"Connected to {self.selected_port} at {self.baud_rate} baud rate.")
+        selected_port = self.select_serial_port(available_ports)
+        self.ser = serial.Serial(selected_port, baud_rate, timeout=1)
+        logger.info(f"Connected to {selected_port} at {baud_rate} baud rate.")
         time.sleep(7)
 
     def list_serial_ports(self):

@@ -24,6 +24,8 @@ int y_max = Y_CENTER + Y_OFFSET;
 Servo servo_x;
 Servo servo_y;
 
+static unsigned long last_time = 0;
+
 // Adjustable
 int ref_eye_height = 40;
 int ref_eye_width = 40;
@@ -41,11 +43,11 @@ int right_eye_height = ref_eye_height;
 int right_eye_width = ref_eye_width;
 
 // Functions
-void draw_eyes(bool update = true);
+void draw_eyes(bool update);
 void saccade(int direction_x, int direction_y);
 void move_eye(int direction);
-void eye_center(bool update = true);
-void eye_blink(int speed = 12);
+void eye_center(bool update);
+void eye_blink(int speed);
 void eye_sleep();
 void eye_wakeup();
 void eye_happy();
@@ -63,7 +65,7 @@ void head_center(int servo_delay);
 void head_nod(int servo_delay);
 void head_shake(int servo_delay);
 void head_roll(int servo_delay);
-void print_angle();
+void random_act();
 
 void draw_eyes(bool update = true) {
   display.clearDisplay();
@@ -405,12 +407,23 @@ void head_roll(int servo_delay=SERVO_DELAY) {
   head_center();
 }
 
-void print_angle() {
-  Serial.print("{\"x\": ");
-  Serial.print(servo_x.read());
-  Serial.print(", \"y\": ");
-  Serial.print(servo_y.read());
-  Serial.println("}");
+void random_act() {
+  int random_num = random(100);
+  int x = random(-25, 26);
+  int y = random(-20, 51);
+  if (random_num < 5) {
+    eye_happy();
+  } else if (random_num < 40) {
+    head_move(x, y, 10);
+    if (x > 0) {
+      eye_right();
+    } else {
+      eye_left();
+    }
+  } else {
+    eye_blink();
+  }
+  head_center();
 }
 
 void setup() {
@@ -441,6 +454,7 @@ void setup() {
   eye_blink();
   head_center();
   delay(500);
+  last_time = millis();
   Serial.println("Robot initialization Done.");
 }
 
@@ -448,6 +462,7 @@ void loop() {
   if (Serial.available() > 0) {  
     String cmd = Serial.readStringUntil('\n');  
     cmd.trim();  
+    last_time = millis();
 
     if (cmd == "eye_blink") {  
       eye_blink();
@@ -492,6 +507,10 @@ void loop() {
       Serial.print("Unknown command: ");
     }
     Serial.println(cmd);
+  }
+  if (millis() - last_time > random(5, 8) * 1000) {
+    random_act();
+    last_time = millis();
   }
   delay(10);
 }
