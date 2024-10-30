@@ -55,21 +55,25 @@ class Listener(object):
         self.executor = ThreadPoolExecutor(max_workers=1)
 
     def hear(self, audio_path='input.wav', timeout=8):
-        with sr.Microphone() as source:
-            input("\n按回车开始说话 ")
-            print("开始说话...")
-            self.executor.submit(act_random, self.cmd)
-            audio_data = self.recognizer.listen(source, timeout=timeout)
-            print("录音已完成")
-            with open(audio_path, "wb") as audio_file:
-                audio_file.write(audio_data.get_wav_data())
+        try:
+            with sr.Microphone() as source:
+                input("\n按回车开始说话 ")
+                print("开始说话...")
+                self.executor.submit(act_random, self.cmd)
+                audio_data = self.recognizer.listen(source, timeout=timeout)
+                print("录音已完成")
+                with open(audio_path, "wb") as audio_file:
+                    audio_file.write(audio_data.get_wav_data())
 
-            audio_file= open(audio_path, "rb")
-            transcription = client.audio.transcriptions.create(
-                model="whisper-1",
-                file=audio_file
-            )
-            return transcription.text
+                audio_file= open(audio_path, "rb")
+                transcription = client.audio.transcriptions.create(
+                    model="whisper-1",
+                    file=audio_file
+                )
+                return transcription.text
+
+        except Exception as e:
+            error(e, "Speech recognition Failed")
 
 
 class Speaker(object):
@@ -84,26 +88,34 @@ class Speaker(object):
             time.sleep(1)
 
     def say(self, text, model="tts-1", voice="onyx", audio_path='output.mp3'):
-        response = client.audio.speech.create(
-            model=model,
-            voice=voice,
-            input=text
-        )
-        response.stream_to_file(audio_path)
-        self.executor.submit(self.play_audio, audio_path)
+        try:
+            response = client.audio.speech.create(
+                model=model,
+                voice=voice,
+                input=text
+            )
+            response.stream_to_file(audio_path)
+            self.executor.submit(self.play_audio, audio_path)
+
+        except Exception as e:
+            error(e, "Speak Failed")
 
 
 class CmdClient(object):
 
     def __init__(self, baud_rate=115200):
-        logger.info("Available serial ports:")
-        available_ports = self.list_serial_ports()
-        if not available_ports:
-            raise ValueError("No serial ports found.")
-        selected_port = self.select_serial_port(available_ports)
-        self.ser = serial.Serial(selected_port, baud_rate, timeout=1)
-        logger.info(f"Connected to {selected_port} at {baud_rate} baud rate.")
-        time.sleep(7)
+        try:
+            logger.info("Available serial ports:")
+            available_ports = self.list_serial_ports()
+            if not available_ports:
+                raise ValueError("No serial ports found.")
+            selected_port = self.select_serial_port(available_ports)
+            self.ser = serial.Serial(selected_port, baud_rate, timeout=1)
+            logger.info(f"Connected to {selected_port} at {baud_rate} baud rate.")
+            time.sleep(7)
+
+        except Exception as e:
+            error(e, "Connect to serial prot Failed")
 
     def list_serial_ports(self):
         ports = serial.tools.list_ports.comports()
@@ -153,7 +165,11 @@ class CmdClient(object):
                 time.sleep(0.1)
         except serial.SerialException as e:
             logger.error(f"Error: {e}")
-            return
+
+
+def error(e, msg):
+    print(f"[Error] {msg}. See details in logs/error.log")
+    logger.error(e)
 
 
 def get_completion(model="gpt-4o-mini", temperature=0, history_messages=[], prompt=''):

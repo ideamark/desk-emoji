@@ -66,6 +66,8 @@ void head_nod(int servo_delay);
 void head_shake(int servo_delay);
 void head_roll(int servo_delay);
 void random_act();
+void servo_attach();
+void servo_detach();
 
 void draw_eyes(bool update = true) {
   display.clearDisplay();
@@ -378,19 +380,25 @@ void head_center(int servo_delay=SERVO_DELAY) {
 }
 
 void head_nod(int servo_delay=1) {
-  for (int i = 0; i < 3; i++) {
-    head_move(0, 40, servo_delay);
-    head_move(0, -40, servo_delay);
+  for (int i = 0; i < 2; i++) {
+    head_move(0, 20, servo_delay);
+    delay(50);
+    head_move(0, -20, servo_delay);
+    delay(50);
   }
 }
 
 void head_shake(int servo_delay=1) {
-  head_move(-20, 0, servo_delay);
-  head_move(40, 0, servo_delay);
-  head_move(-40, 0, servo_delay);
-  head_move(40, 0, servo_delay);
-  head_move(-40, 0, servo_delay);
+  head_move(-10, 0, servo_delay);
+  delay(50);
   head_move(20, 0, servo_delay);
+  delay(50);
+  head_move(-20, 0, servo_delay);
+  delay(50);
+  head_move(20, 0, servo_delay);
+  delay(50);
+  head_move(-10, 0, servo_delay);
+  delay(50);
 }
 
 void head_roll(int servo_delay=SERVO_DELAY) {
@@ -426,6 +434,16 @@ void random_act() {
   head_center();
 }
 
+void servo_attach() {
+  servo_x.attach(X_PIN);
+  servo_y.attach(Y_PIN);
+}
+
+void servo_detach() {
+  servo_x.detach();
+  servo_y.detach();
+}
+
 void setup() {
 
   Serial.begin(115200);
@@ -440,8 +458,7 @@ void setup() {
   }
 
   // Init Servo
-  servo_x.attach(X_PIN);
-  servo_y.attach(Y_PIN);
+  servo_attach();
   servo_x.write(X_CENTER);
   servo_y.write(Y_CENTER);
 
@@ -456,6 +473,7 @@ void setup() {
   delay(500);
   last_time = millis();
   Serial.println("Robot initialization Done.");
+  servo_detach();
 }
 
 void loop() {  
@@ -463,6 +481,7 @@ void loop() {
     String cmd = Serial.readStringUntil('\n');  
     cmd.trim();  
     last_time = millis();
+    servo_attach();
 
     if (cmd == "eye_blink") {  
       eye_blink();
@@ -507,9 +526,12 @@ void loop() {
       Serial.print("Unknown command: ");
     }
     Serial.println(cmd);
+    servo_detach();
   }
   if (millis() - last_time > random(5, 8) * 1000) {
+    servo_attach();
     random_act();
+    servo_detach();
     last_time = millis();
   }
   delay(10);
