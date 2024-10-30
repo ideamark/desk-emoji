@@ -17,20 +17,20 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 #define X_OFFSET 25
 #define Y_CENTER 70
 #define Y_OFFSET 50
-int x_min = X_CENTER - X_OFFSET;
-int x_max = X_CENTER + X_OFFSET;
-int y_min = Y_CENTER - Y_OFFSET;
-int y_max = Y_CENTER + Y_OFFSET;
+const int x_min = X_CENTER - X_OFFSET;
+const int x_max = X_CENTER + X_OFFSET;
+const int y_min = Y_CENTER - Y_OFFSET;
+const int y_max = Y_CENTER + Y_OFFSET;
 Servo servo_x;
 Servo servo_y;
 
 static unsigned long last_time = 0;
 
 // Adjustable
-int ref_eye_height = 40;
-int ref_eye_width = 40;
-int ref_space_between_eye = 10;
-int ref_corner_radius = 10;
+const int ref_eye_height = 40;
+const int ref_eye_width = 40;
+const int ref_space_between_eye = 10;
+const int ref_corner_radius = 10;
 
 // Current state of the eyes
 int left_eye_height = ref_eye_height;
