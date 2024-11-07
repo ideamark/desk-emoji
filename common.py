@@ -14,20 +14,6 @@ from openai import OpenAI
 from langchain.memory import ConversationBufferMemory
 
 
-# OpenAI API
-api_json_path = 'api.json'
-
-if not os.path.exists(api_json_path):
-    os.mkdir(api_json_path)
-
-with open(api_json_path, 'r') as file:
-    data = json.load(file)
-
-client = OpenAI(
-    base_url = data.get('api_url', ''),
-    api_key = data.get('api_key', '')
-)
-
 # Set conversation memory
 memory = ConversationBufferMemory(buffer_key="chat_history")
 max_memory = 30
@@ -61,57 +47,54 @@ logger.addHandler(info_handler)
 logger.addHandler(stream_handler)
 
 
-class Listener(object):
+class ChatGPT(object):
 
-    def __init__(self, cmd):
-        self.cmd = cmd
-        self.recognizer = sr.Recognizer()
-        self.executor = ThreadPoolExecutor(max_workers=1)
-
-    def hear(self, audio_path='input.wav', timeout=8):
-        try:
-            with sr.Microphone() as source:
-                print("开始说话...")
-                self.executor.submit(act_random, self.cmd)
-                audio_data = self.recognizer.listen(source, timeout=timeout)
-                print("录音已完成")
-                with open(audio_path, "wb") as audio_file:
-                    audio_file.write(audio_data.get_wav_data())
-
-                audio_file= open(audio_path, "rb")
-                transcription = client.audio.transcriptions.create(
-                    model="whisper-1",
-                    file=audio_file
-                )
-                return transcription.text
-
-        except Exception as e:
-            error(e, "Speech recognition Failed")
-
-
-class Speaker(object):
     def __init__(self):
-        self.executor = ThreadPoolExecutor(max_workers=1)
-        pygame.mixer.init()
-    
-    def play_audio(self, audio_path):
-        pygame.mixer.music.load(audio_path)
-        pygame.mixer.music.play()
-        while pygame.mixer.music.get_busy():
-            time.sleep(1)
+        self.json_path = 'api.json'
+        self.client = None
+        self.__create_empty_json()
+        self.connect()
 
-    def say(self, text, model="tts-1", voice="onyx", audio_path='output.mp3'):
+    def __create_empty_json(self):
+        data = {
+            "api_url": "",
+            "api_key": ""
+        }
+        if not os.path.exists(self.json_path):
+            with open(self.json_path, 'w') as fp:
+                json.dump(data, fp, indent=4)
+
+    def read_json(self):
+        with open(self.json_path, 'r') as json_file:
+            data = json.load(json_file)
+        return data.get('api_url', ''), data.get('api_key', '')
+
+    def write_json(self, data):
+        with open(self.json_path, 'w') as fp:
+            json.dump(data, fp, indent=4)
+
+    def connect(self, api_url="", api_key=""):
+        self.client = OpenAI(
+            base_url = api_url,
+            api_key = api_key
+        )
+
+    def reconnect(self):
+        api_url, api_key = self.read_json()
+        self.connect(api_url, api_key)
+
+    def check_status(self):
         try:
-            response = client.audio.speech.create(
-                model=model,
-                voice=voice,
-                input=text
-            )
-            response.stream_to_file(audio_path)
-            self.executor.submit(self.play_audio, audio_path)
-
+            self.reconnect()
+            self.client.models.list()
+            logger.info("Connect to OpenAI API Success!")
+            return True
         except Exception as e:
-            error(e, "Speak Failed")
+            error(e, "Connect to OpenAI API Failed! Please check the API url and key")
+            return False
+
+
+chat_gpt = ChatGPT()
 
 
 class CmdClient(object):
@@ -177,12 +160,74 @@ class CmdClient(object):
                     return received_msg
 
                 time.sleep(0.1)
-        except serial.SerialException as e:
-            logger.error(f"Error: {e}")
+        except Exception as e:
+            error(e, "Serial port send message Failed!")
 
 
-def error(e, msg):
+cmd = CmdClient()
+
+
+class Listener(object):
+
+    def __init__(self):
+        self.recognizer = sr.Recognizer()
+        self.executor = ThreadPoolExecutor(max_workers=1)
+
+    def hear(self, audio_path='input.wav', timeout=8):
+        try:
+            with sr.Microphone() as source:
+                print("开始说话...")
+                self.executor.submit(act_random, cmd)
+                audio_data = self.recognizer.listen(source, timeout=timeout)
+                print("录音已完成")
+                with open(audio_path, "wb") as audio_file:
+                    audio_file.write(audio_data.get_wav_data())
+
+                audio_file= open(audio_path, "rb")
+                transcription = chat_gpt.client.audio.transcriptions.create(
+                    model="whisper-1",
+                    file=audio_file
+                )
+                return transcription.text
+
+        except Exception as e:
+            error(e, "Speech recognition Failed")
+
+
+listener = Listener()
+
+
+class Speaker(object):
+    def __init__(self):
+        self.executor = ThreadPoolExecutor(max_workers=1)
+        pygame.mixer.init()
+    
+    def play_audio(self, audio_path):
+        pygame.mixer.music.load(audio_path)
+        pygame.mixer.music.play()
+        while pygame.mixer.music.get_busy():
+            time.sleep(1)
+
+    def say(self, text="", model="tts-1", voice="onyx", audio_path='output.mp3'):
+        try:
+            response = chat_gpt.client.audio.speech.create(
+                model=model,
+                voice=voice,
+                input=text
+            )
+            response.stream_to_file(audio_path)
+            self.executor.submit(self.play_audio, audio_path)
+
+        except Exception as e:
+            error(e, "Speak Failed")
+
+
+speaker = Speaker()
+
+
+def error(e="", msg=""):
     print(f"[Error] {msg}. See details in logs/error.log")
+    logger.error(msg)
     logger.error(e)
 
 
@@ -223,7 +268,7 @@ Ensure to separate the response and sentiment by clearly labeling them.
     prompt_with_analysis = f"{prompt}\n\n{sentiment_request}"
     messages.append({"role": "user", "content": prompt_with_analysis})
 
-    response = client.chat.completions.create(
+    response = chat_gpt.client.chat.completions.create(
         model=model,
         messages=messages,
         temperature=temperature,
@@ -242,20 +287,24 @@ Ensure to separate the response and sentiment by clearly labeling them.
 
 
 def chat(question):
-    if not question: return
-    logger.info(f"You: {question}")
-    memory_content = memory.load_memory_variables(inputs={})
-    history = memory_content.get('chat_history', [])
-    history_messages = history[max_memory*-2:]
-    answer, emotion = get_completion(temperature=1, history_messages=history_messages, prompt=question)
-    memory.chat_memory.add_user_message(question)
-    memory.chat_memory.add_ai_message(answer)
-    logger.info(f"Bot: {answer}")
-    logger.info(f'Emo: {emotion}')
-    return answer, emotion
+    try:
+        if not question: return
+        logger.info(f"You: {question}")
+        memory_content = memory.load_memory_variables(inputs={})
+        history = memory_content.get('chat_history', [])
+        history_messages = history[max_memory*-2:]
+        answer, emotion = get_completion(temperature=1, history_messages=history_messages, prompt=question)
+        memory.chat_memory.add_user_message(question)
+        memory.chat_memory.add_ai_message(answer)
+        logger.info(f"Bot: {answer}")
+        logger.info(f'Emo: {emotion}')
+        return answer, emotion
+    except Exception as e:
+        error(e, "Chat Failed!")
+        return "OpenAI 连接失败！请检查 API 配置", "(x_x)"
 
 
-def act_random(cmd, loop=False, sleep_min=0, sleep_max=8):
+def act_random(loop=False, sleep_min=0, sleep_max=8):
     def act():
         random_num = random.random()
         x = random.randint(-25, 25)
@@ -282,14 +331,14 @@ def act_random(cmd, loop=False, sleep_min=0, sleep_max=8):
         time.sleep(random.randint(sleep_min, sleep_max))
 
 
-def act_happy(cmd):
+def act_happy():
     cmd.send('eye_happy')
     command = random.choice(['head_nod', 'head_shake'])
     cmd.send(command)
     cmd.send('eye_blink')
 
 
-def act_sad(cmd):
+def act_sad():
     cmd.send('head_move 0 100 10')
     cmd.send('eye_sad')
     cmd.send('head_shake')
@@ -297,7 +346,7 @@ def act_sad(cmd):
     cmd.send('eye_blink')
 
 
-def act_anger(cmd):
+def act_anger():
     cmd.send('eye_anger')
     for i in range(2):
         command = random.choice(['head_nod', 'head_shake'])
@@ -305,14 +354,14 @@ def act_anger(cmd):
     cmd.send('eye_blink')
 
 
-def act_surprise(cmd):
+def act_surprise():
     cmd.send('eye_surprise')
     cmd.send('head_shake')
     time.sleep(1)
     cmd.send('eye_blink')
 
 
-def act_curiosity(cmd):
+def act_curiosity():
     def look_side(x_offset):
         if x_offset > 0:
             cmd.send('eye_right')
@@ -330,17 +379,17 @@ def act_curiosity(cmd):
     cmd.send('eye_blink')
 
 
-def act_emotion(cmd, emotion):
+def act_emotion(emotion):
     if 'happy' in emotion:
-        act_happy(cmd)
+        act_happy()
     elif 'sad' in emotion:
-        act_sad(cmd)
+        act_sad()
     elif 'anger' in emotion:
-        act_anger(cmd)
+        act_anger()
     elif 'surprise' in emotion or 'undetected' in emotion:
-        act_surprise(cmd)
+        act_surprise()
     elif 'curious' in emotion:
-        act_curiosity(cmd)
+        act_curiosity()
     else:
-        act_random(cmd)
+        act_random()
     cmd.send('head_center')

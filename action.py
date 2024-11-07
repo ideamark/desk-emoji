@@ -1,12 +1,12 @@
 from common import *
 
 
-def act_introduce(cmd, speaker):
+def act_introduce():
     text = '''
 Hello 你好呀！我是Desk-Emoji，你的友好桌面机器人，致力于为你的工作空间带来快乐和效率。
 凭借我充满活力的个性和实用的功能，我的目标是在辅助你完成日常任务的同时，为你带来乐趣。
 无论你需要讲个笑话、一句励志名言，还是仅仅一个微笑，我都在这里为你增添一天的光彩，让你的桌面体验更加愉悦。
-准备好与我一起探索 emoji 的创意世界了吗？让我们开始吧。
+准备好与我一起探索 emoji 的创意世界了吗？Let's roll!。
 '''
     speaker.say(text)
     cmd.send('eye_happy')
@@ -27,10 +27,9 @@ Hello 你好呀！我是Desk-Emoji，你的友好桌面机器人，致力于为�
 
 
 if __name__ == '__main__':
-    cmd = CmdClient()
+    if not chat_gpt.check_status(): exit(1)
     cmd.select_port()
     cmd.connect()
-    speaker = Speaker()
-    print('\nPerforming...\n')
-    act_introduce(cmd, speaker)
-    act_random(cmd, loop=True, sleep_min=0, sleep_max=3)
+    print('\n表演中...\n')
+    act_introduce()
+    act_random(loop=True, sleep_min=0, sleep_max=3)

@@ -1,8 +1,8 @@
 import os
-import json
 import threading
 from PIL import Image
 import tkinter as tk
+from tkinter import messagebox
 import customtkinter as ctk
 
 from common import *
@@ -20,11 +20,6 @@ class App(ctk.CTk):
         self.geometry(f"{self.window_width}x{self.window_height}")
         self.resizable(False, False)
         self.center_window()
-
-        # set instance
-        self.cmd = CmdClient()
-        self.listener = Listener(self.cmd)
-        self.speaker = Speaker()
 
         # set grid layout 1x2
         self.grid_rowconfigure(0, weight=1)
@@ -106,7 +101,7 @@ class App(ctk.CTk):
         self.usb_frame.grid_columnconfigure(0, weight=1)
 
         self.usb_combobox = ctk.CTkComboBox(self.usb_frame,
-                                            values=[port.device for port in self.cmd.list_ports()])
+                                            values=[port.device for port in cmd.list_ports()])
         self.usb_combobox.grid(row=0, column=0, padx=20, pady=40, sticky="nsew")
         
         self.usb_connect_button = ctk.CTkButton(self.usb_frame, text="连接", command=self.usb_connect_button_event)
@@ -133,7 +128,7 @@ class App(ctk.CTk):
         self.save_flag_label = ctk.CTkLabel(self.api_frame, text="")
         self.save_flag_label.grid(row=2, column=0, padx=20, pady=20)
 
-        self.api_save_button = ctk.CTkButton(self.api_frame, text="保存", command=self.api_save_button_event)
+        self.api_save_button = ctk.CTkButton(self.api_frame, text="连接", command=self.api_save_button_event)
         self.api_save_button.grid(row=2, column=1, padx=20, pady=10)
 
         # create help frame
@@ -143,19 +138,18 @@ class App(ctk.CTk):
         help_text = """
 Desk-Emoji 桌面陪伴机器人
 
-
 客户端使用方法：
-
 1. 点击“API” -> 配置 OpenAI API 的网址和 Key（支持中转 API）
-2. 连接机器人，点击“串口” -> 下拉菜单选择机器人所在串口 -> 点击“连接” 
+2. 连接机器人，点击“串口” -> 下拉菜单选择机器人所在串口 -> 点击“连接”
 3. 点击“主页”开始与机器人互动
 
-                                            杭州易问科技版权所有 2024.11.7
-                                            邮箱：mark.yang@ewen.ltd
+杭州易问科技版权所有 2024.11.7
+邮箱：mark.yang@ewen.ltd
 """
         self.help_text_lable = ctk.CTkLabel(self.help_frame, text=help_text, anchor="w", justify="left", wraplength=380)
         self.help_text_lable.grid(row=0, column=0, padx=20, pady=20)
 
+        chat_gpt.reconnect()
         self.select_frame_by_name("home")
 
     def center_window(self):
@@ -167,12 +161,11 @@ Desk-Emoji 桌面陪伴机器人
 
     def load_api_key(self):
         try:
-            with open(api_json_path, 'r') as file:
-                data = json.load(file)
-                if not self.api_url.get():
-                    self.api_url.insert(0, data.get('api_url', ''))
-                if not self.api_key.get():
-                    self.api_key.insert(0, data.get('api_key', ''))
+            url, key = chat_gpt.read_json()
+            if not self.api_url.get():
+                self.api_url.insert(0, url)
+            if not self.api_key.get():
+                self.api_key.insert(0, key)
         except Exception:
             pass
 
@@ -181,9 +174,8 @@ Desk-Emoji 桌面陪伴机器人
             'api_url': self.api_url.get(),
             'api_key': self.api_key.get()
         }
-        with open(api_json_path, 'w') as file:
-            json.dump(data, file, indent=4)
-        logger.info(f"Saved API Key to {api_json_path}")
+        chat_gpt.write_json(data)
+        logger.info(f"Saved API Key to {chat_gpt.json_path}")
 
     def insert_textbox(self, text):
         self.textbox.insert(tk.END, f"{text}\n")
@@ -224,7 +216,7 @@ Desk-Emoji 桌面陪伴机器人
 
     def usb_connect_button_event(self):
         port = self.usb_combobox.get()
-        if self.cmd.connect(port=port):
+        if cmd.connect(port=port):
             self.usb_flag_label.configure(text="连接成功", text_color="green")
         else:
             self.usb_flag_label.configure(text="连接失败", text_color="red")
@@ -236,7 +228,10 @@ Desk-Emoji 桌面陪伴机器人
 
     def api_save_button_event(self):
         self.save_api_key()
-        self.save_flag_label.configure(text="已保存", text_color="green")
+        if chat_gpt.check_status():
+            self.save_flag_label.configure(text="连接成功", text_color="green")
+        else:
+            self.save_flag_label.configure(text="连接失败", text_color="red")
 
     def help_button_event(self):
         self.select_frame_by_name("help")
@@ -247,8 +242,8 @@ Desk-Emoji 桌面陪伴机器人
             self.insert_textbox(f"Bot:\t{answer}")
             self.insert_textbox(f"Emo:\t{emotion}\n")
             if bool(self.speaker_switch.get()):
-                self.speaker.say(answer)
-            threading.Thread(target=act_emotion, args=(self.cmd, emotion)).start()
+                speaker.say(answer)
+            threading.Thread(target=act_emotion, args=(emotion,)).start()
 
     def chat_msg_event(self, event):
         question = self.chat_msg.get()
@@ -261,7 +256,7 @@ Desk-Emoji 桌面陪伴机器人
         threading.Thread(target=self.__process_speech).start()
 
     def __process_speech(self):
-        question = self.listener.hear()
+        question = listener.hear()
         self.__chat_LLM(question)
         self.speech_bar.stop()
 

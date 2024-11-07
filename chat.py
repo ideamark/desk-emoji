@@ -9,17 +9,13 @@ def main():
     question = listener.hear()
     answer, emotion = chat(question)
     speaker.say(answer)
-    threading.Thread(target=act_emotion, args=(cmd, emotion)).start()
+    threading.Thread(target=act_emotion, args=(emotion,)).start()
 
 
 if __name__ == '__main__':
-    logger.info('Initializing...')
-    cmd = CmdClient()
+    if not chat_gpt.check_status(): exit(1)
     cmd.select_port()
     cmd.connect()
-    listener = Listener(cmd)
-    speaker = Speaker()
-    logger.info("Initialization complete.")
     try:
         while True:
             main()
