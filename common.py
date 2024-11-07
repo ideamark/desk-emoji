@@ -3,16 +3,25 @@ import time
 import logging
 import inquirer
 import pygame
-import platform
+import json
 import random
 import serial
 import serial.tools.list_ports
 import speech_recognition as sr
 from concurrent.futures import ThreadPoolExecutor
+from openai import OpenAI
 from langchain.memory import ConversationBufferMemory
 
-from settings import *
 
+# OpenAI API
+api_json_path = 'api.json'
+with open(api_json_path, 'r') as file:
+    data = json.load(file)
+
+client = OpenAI(
+    base_url = data.get('api_url', ''),
+    api_key = data.get('api_key', '')
+)
 
 # Set conversation memory
 memory = ConversationBufferMemory(buffer_key="chat_history")
@@ -57,7 +66,6 @@ class Listener(object):
     def hear(self, audio_path='input.wav', timeout=8):
         try:
             with sr.Microphone() as source:
-                input("\n按回车开始说话 ")
                 print("开始说话...")
                 self.executor.submit(act_random, self.cmd)
                 audio_data = self.recognizer.listen(source, timeout=timeout)
@@ -103,47 +111,46 @@ class Speaker(object):
 
 class CmdClient(object):
 
-    def __init__(self, baud_rate=115200):
+    def __init__(self):
+        self.port = ''
+        self.ser = None
+
+    def list_ports(self):
+        ports = serial.tools.list_ports.comports()
+        return [port.device for port in ports]
+
+    def select_port(self):
+        ports = serial.tools.list_ports.comports()
+        if len(ports) == 1:
+            return ports[0]
+        questions = [
+            inquirer.List('port',
+                          message="Select a port",
+                          choices=ports,
+                          carousel=True)
+        ]
+        answers = inquirer.prompt(questions)
+        port = answers['port']
+        self.port = port
+        return port
+
+    def connect(self, port=None, baud_rate=115200):
         try:
-            logger.info("Available serial ports:")
-            available_ports = self.list_serial_ports()
-            if not available_ports:
-                raise ValueError("No serial ports found.")
-            selected_port = self.select_serial_port(available_ports)
-            self.ser = serial.Serial(selected_port, baud_rate, timeout=1)
-            logger.info(f"Connected to {selected_port} at {baud_rate} baud rate.")
-            time.sleep(7)
+            port = port if port else self.port
+            self.ser = serial.Serial(port, baud_rate, timeout=1)
+            logger.info(f"Connected to {port} at {baud_rate} baud rate.")
+            return True
 
         except Exception as e:
             error(e, "Connect to serial prot Failed")
+            return False
 
-    def list_serial_ports(self):
-        ports = serial.tools.list_ports.comports()
-        available_ports = []
-        for port in ports:
-            if platform.system() == 'Windows' or  "serial" in port.device.lower():
-                available_ports.append(port.device)
-                logger.info(port.device)
-        return available_ports
-
-    def read_from_port(self, serial_port):
+    def read(self, port):
         while True:
-            if serial_port.in_waiting:
-                data = serial_port.read(serial_port.in_waiting)
+            if port.in_waiting:
+                data = port.read(port.in_waiting)
                 result = data.decode('utf-8', errors='ignore')
                 logger.debug("\nReceived:", result.strip('\n').strip())
-
-    def select_serial_port(self, available_ports):
-        if len(available_ports) == 1:
-            return available_ports[0]
-        questions = [
-            inquirer.List('port',
-                        message="Select a port",
-                        choices=available_ports,
-                        carousel=True)
-        ]
-        answers = inquirer.prompt(questions)
-        return answers['port']
 
     def send(self, msg):
         try:

@@ -5,6 +5,7 @@ from action import *
 
 
 def main():
+    input("\n按回车开始说话 ")
     question = listener.hear()
     answer, emotion = chat(question)
     speaker.say(answer)
@@ -14,6 +15,8 @@ def main():
 if __name__ == '__main__':
     logger.info('Initializing...')
     cmd = CmdClient()
+    cmd.select_port()
+    cmd.connect()
     listener = Listener(cmd)
     speaker = Speaker()
     logger.info("Initialization complete.")

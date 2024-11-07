@@ -15,7 +15,7 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 #define SERVO_DELAY 10
 #define X_CENTER 90
 #define X_OFFSET 25
-#define Y_CENTER 70
+#define Y_CENTER 80
 #define Y_OFFSET 50
 const int x_min = X_CENTER - X_OFFSET;
 const int x_max = X_CENTER + X_OFFSET;

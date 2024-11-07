@@ -28,6 +28,8 @@ Hello 你好呀！我是Desk-Emoji，你的友好桌面机器人，致力于为�
 
 if __name__ == '__main__':
     cmd = CmdClient()
+    cmd.select_port()
+    cmd.connect()
     speaker = Speaker()
     print('\nPerforming...\n')
     act_introduce(cmd, speaker)

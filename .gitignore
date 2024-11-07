@@ -2,7 +2,10 @@
 __pycache__/
 backup/
 logs/
+ui_images/
 keys.txt
+api.json
+main.py
 *.swp
 *.wav
 *.mp3
