@@ -30,7 +30,7 @@ Desk-Emoji is a truly open-source AI desktop robot featuring an emoji screen, a 
 
   * `python main.py`
   * ![1730990829645](images/gui.png)
-* Test robot
+* Test code
 
   * Test action: `python action.py`
   * Test chat:  `python chat.py`
