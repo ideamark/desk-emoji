@@ -16,19 +16,22 @@ Desk-Emoji is a truly open-source AI desktop robot featuring an emoji screen, a 
 ### Software
 
 * 3.9 <= Python version <= 3.11
-
 * Initialize environment
+
   * For MacOS or Linux:
+
     * `./init.sh`
     * `source .venv/bin/activate`
   * For Windows:
+
     * `.\init.bat`
     * `.venv\Scripts\activate`
-
 * Launch the main program
-  * `python main.py`
 
+  * `python main.py`
+  * ![1730990829645](images/gui.png)
 * Test robot
+
   * Test action: `python action.py`
   * Test chat:  `python chat.py`
 
