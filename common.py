@@ -16,6 +16,10 @@ from langchain.memory import ConversationBufferMemory
 
 # OpenAI API
 api_json_path = 'api.json'
+
+if not os.path.exists(api_json_path):
+    os.mkdir(api_json_path)
+
 with open(api_json_path, 'r') as file:
     data = json.load(file)
 
