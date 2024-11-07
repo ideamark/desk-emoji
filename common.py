@@ -4,6 +4,7 @@ import logging
 import inquirer
 import pygame
 import json
+import platform
 import random
 import serial
 import serial.tools.list_ports
@@ -117,10 +118,12 @@ class CmdClient(object):
 
     def list_ports(self):
         ports = serial.tools.list_ports.comports()
-        return [port.device for port in ports]
+        matching_ports = [port for port in ports if platform.system() == 'Windows' or "serial" in port.device.lower()]
+        non_matching_ports = [port for port in ports if port not in matching_ports]
+        return matching_ports + non_matching_ports
 
     def select_port(self):
-        ports = serial.tools.list_ports.comports()
+        ports = self.list_ports()
         if len(ports) == 1:
             return ports[0]
         questions = [
@@ -136,7 +139,7 @@ class CmdClient(object):
 
     def connect(self, port=None, baud_rate=115200):
         try:
-            port = port if port else self.port
+            port = port if port else self.port.device
             self.ser = serial.Serial(port, baud_rate, timeout=1)
             logger.info(f"Connected to {port} at {baud_rate} baud rate.")
             return True

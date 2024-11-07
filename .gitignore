@@ -1,11 +1,13 @@
 .venv/
 __pycache__/
+dist/
+build/
 backup/
 logs/
-ui_images/
 keys.txt
 api.json
-main.py
+pack.sh
 *.swp
 *.wav
 *.mp3
+*.spec

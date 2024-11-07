@@ -8,19 +8,14 @@ Desk-Emoji is a truly open-source AI desktop robot featuring an emoji screen, a 
 
 ### Hardware
 
-* Assamble the robot first. There are 2 axis servos:
-  ![](images/servo.jpg "servo")
+* Assamble 2 axis servos:
+  ![img](images/servo.jpg "servo")
 * OLED display connection:
-  ![](images/oled.jpg "oled")
-* Download Auriodo [IDE](https://www.arduino.cc/en/software/).
-* Connect Arduino board to PC and select the right board type.
-* Compile and upload `motor_center.ino` to center the motors.
-* Compile and upload `oled_test.ino` to test the OLED screen.
-* Finally, compile and upload `robot_base.ino` to the board.
+  ![img](images/oled.jpg "oled")
 
 ### Software
 
-* Python version <= 3.11
+* 3.9 <= Python version <= 3.11
 * Initialize environment
 
   * For MacOS or Linux:
