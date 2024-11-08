@@ -114,7 +114,7 @@ class CmdClient(object):
     def list_ports(self):
         ports = serial.tools.list_ports.comports()
         matching_ports = [port.device for port in ports if platform.system() == 'Windows' or "serial" in port.device.lower()]
-        non_matching_ports = [port.device for port in ports if port not in matching_ports]
+        non_matching_ports = [port.device for port in ports if port.device not in matching_ports]
         return self.__unique_ports(matching_ports + non_matching_ports)
 
     def select_port(self):
