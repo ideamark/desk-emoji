@@ -267,10 +267,12 @@ Desk-Emoji 桌面陪伴机器人
         self.speech_bar.stop()
 
     def check_all_connections(self):
+        success = True
         self.print_textbox("API 连接中...")
         if chatgpt.connect():
             self.print_textbox("API 连接成功")
         else:
+            success = False
             self.print_textbox("[错误] API 连接失败，请检查 API 配置")
 
         self.print_textbox("串口连接中...")
@@ -278,8 +280,12 @@ Desk-Emoji 桌面陪伴机器人
         if cmd.connect(port):
             self.print_textbox(f"串口 {port} 连接成功")
         else:
+            success = False
             self.print_textbox(f"[错误] 串口 {port} 连接失败，请检查串口配置")
-        self.print_textbox("初始化成功\n")
+        if success:
+            self.print_textbox("初始化成功\n")
+        else:
+            self.print_textbox("初始化失败 :(\n")
 
 
 if __name__ == "__main__":
