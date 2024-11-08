@@ -27,16 +27,16 @@ class App(ctk.CTk):
         self.grid_columnconfigure(1, weight=1)
 
         # load images with light and dark mode image
-        image_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ui_images")
-        self.logo_image = ctk.CTkImage(Image.open(os.path.join(image_path, "main_icon.png")), size=(26, 26))
-        self.home_image = ctk.CTkImage(light_image=Image.open(os.path.join(image_path, "home_dark.png")),
-                                                 dark_image=Image.open(os.path.join(image_path, "home_light.png")), size=(20, 20))
-        self.api_icon = ctk.CTkImage(light_image=Image.open(os.path.join(image_path, "api_dark.png")),
-                                                 dark_image=Image.open(os.path.join(image_path, "api_light.png")), size=(20, 20))
-        self.usb_icon = ctk.CTkImage(light_image=Image.open(os.path.join(image_path, "usb_dark.png")),
-                                                     dark_image=Image.open(os.path.join(image_path, "usb_light.png")), size=(20, 20))
-        self.help_icon = ctk.CTkImage(light_image=Image.open(os.path.join(image_path, "help_dark.png")),
-                                                     dark_image=Image.open(os.path.join(image_path, "help_light.png")), size=(20, 20))
+        icon_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "icons")
+        self.logo_image = ctk.CTkImage(Image.open(os.path.join(icon_path, "main_icon.png")), size=(26, 26))
+        self.home_image = ctk.CTkImage(light_image=Image.open(os.path.join(icon_path, "home_dark.png")),
+                                                 dark_image=Image.open(os.path.join(icon_path, "home_light.png")), size=(20, 20))
+        self.api_icon = ctk.CTkImage(light_image=Image.open(os.path.join(icon_path, "api_dark.png")),
+                                                 dark_image=Image.open(os.path.join(icon_path, "api_light.png")), size=(20, 20))
+        self.usb_icon = ctk.CTkImage(light_image=Image.open(os.path.join(icon_path, "usb_dark.png")),
+                                                     dark_image=Image.open(os.path.join(icon_path, "usb_light.png")), size=(20, 20))
+        self.help_icon = ctk.CTkImage(light_image=Image.open(os.path.join(icon_path, "help_dark.png")),
+                                                     dark_image=Image.open(os.path.join(icon_path, "help_light.png")), size=(20, 20))
 
         # create navigation frame
         self.navigation_frame = ctk.CTkFrame(self, corner_radius=0)
