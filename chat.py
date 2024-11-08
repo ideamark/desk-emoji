@@ -13,7 +13,7 @@ def main():
 
 
 if __name__ == '__main__':
-    if not chat_gpt.check_status(): exit(1)
+    if not chatgpt.connect(): exit(1)
     cmd.select_port()
     cmd.connect()
     try:

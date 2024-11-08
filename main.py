@@ -2,7 +2,6 @@ import os
 import threading
 from PIL import Image
 import tkinter as tk
-from tkinter import messagebox
 import customtkinter as ctk
 
 from common import *
@@ -12,6 +11,8 @@ class App(ctk.CTk):
     def __init__(self):
 
         super().__init__()
+
+        self.checked = False
 
         # init window
         self.title("Desk-Emoji  v1.0.0")
@@ -100,8 +101,7 @@ class App(ctk.CTk):
         self.usb_frame = ctk.CTkFrame(self, corner_radius=0, fg_color="transparent")
         self.usb_frame.grid_columnconfigure(0, weight=1)
 
-        self.usb_combobox = ctk.CTkComboBox(self.usb_frame,
-                                            values=[port.device for port in cmd.list_ports()])
+        self.usb_combobox = ctk.CTkComboBox(self.usb_frame, values=cmd.list_ports())
         self.usb_combobox.grid(row=0, column=0, padx=20, pady=40, sticky="nsew")
         
         self.usb_connect_button = ctk.CTkButton(self.usb_frame, text="连接", command=self.usb_connect_button_event)
@@ -138,10 +138,10 @@ class App(ctk.CTk):
         help_text = """
 Desk-Emoji 桌面陪伴机器人
 
-客户端使用方法：
-1. 点击“API” -> 配置 OpenAI API 的网址和 Key（支持中转 API）
-2. 连接机器人，点击“串口” -> 下拉菜单选择机器人所在串口 -> 点击“连接”
-3. 点击“主页”开始与机器人互动
+初次配置：
+1. 点击“API” -> 配置 OpenAI API 网址和 Key（支持中转）
+2. 连接机器人，点击“串口” -> 下拉菜单选择串口 -> 点击“连接”
+
 
 杭州易问科技版权所有 2024.11.7
 邮箱：mark.yang@ewen.ltd
@@ -149,8 +149,7 @@ Desk-Emoji 桌面陪伴机器人
         self.help_text_lable = ctk.CTkLabel(self.help_frame, text=help_text, anchor="w", justify="left", wraplength=380)
         self.help_text_lable.grid(row=0, column=0, padx=20, pady=20)
 
-        chat_gpt.reconnect()
-        self.select_frame_by_name("home")
+        self.select_frame_by_name("usb")
 
     def center_window(self):
         screen_width = self.winfo_screenwidth()
@@ -161,7 +160,7 @@ Desk-Emoji 桌面陪伴机器人
 
     def load_api_key(self):
         try:
-            url, key = chat_gpt.read_json()
+            url, key = chatgpt.read_json()
             if not self.api_url.get():
                 self.api_url.insert(0, url)
             if not self.api_key.get():
@@ -174,12 +173,15 @@ Desk-Emoji 桌面陪伴机器人
             'api_url': self.api_url.get(),
             'api_key': self.api_key.get()
         }
-        chat_gpt.write_json(data)
-        logger.info(f"Saved API Key to {chat_gpt.json_path}")
+        chatgpt.write_json(data)
+        logger.info(f"Saved API Key to {chatgpt.json_path}")
 
-    def insert_textbox(self, text):
+    def print_textbox(self, text):
         self.textbox.insert(tk.END, f"{text}\n")
         self.textbox.see(tk.END)
+
+    def update_usb_port_list(self):
+        self.usb_combobox.configure(values=cmd.list_ports())
 
     def select_frame_by_name(self, name):
         self.home_button.configure(fg_color=("gray75", "gray25") if name == "home" else "transparent")
@@ -209,14 +211,18 @@ Desk-Emoji 桌面陪伴机器人
 
     def home_button_event(self):
         self.select_frame_by_name("home")
+        if not self.checked:
+            self.check_all_connections()
+            self.checked = True
 
     def usb_button_event(self):
+        self.update_usb_port_list()
         self.select_frame_by_name("usb")
         self.usb_flag_label.configure(text="", fg_color="transparent")
 
     def usb_connect_button_event(self):
         port = self.usb_combobox.get()
-        if cmd.connect(port=port):
+        if cmd.connect(port):
             self.usb_flag_label.configure(text="连接成功", text_color="green")
         else:
             self.usb_flag_label.configure(text="连接失败", text_color="red")
@@ -228,7 +234,7 @@ Desk-Emoji 桌面陪伴机器人
 
     def api_save_button_event(self):
         self.save_api_key()
-        if chat_gpt.check_status():
+        if chatgpt.connect():
             self.save_flag_label.configure(text="连接成功", text_color="green")
         else:
             self.save_flag_label.configure(text="连接失败", text_color="red")
@@ -237,10 +243,10 @@ Desk-Emoji 桌面陪伴机器人
         self.select_frame_by_name("help")
 
     def __chat_LLM(self, question):
-            self.insert_textbox(f"You:\t{question}")
+            self.print_textbox(f"You:\t{question}")
             answer, emotion = chat(question)
-            self.insert_textbox(f"Bot:\t{answer}")
-            self.insert_textbox(f"Emo:\t{emotion}\n")
+            self.print_textbox(f"Bot:\t{answer}")
+            self.print_textbox(f"Emo:\t{emotion}\n")
             if bool(self.speaker_switch.get()):
                 speaker.say(answer)
             threading.Thread(target=act_emotion, args=(emotion,)).start()
@@ -259,6 +265,21 @@ Desk-Emoji 桌面陪伴机器人
         question = listener.hear()
         self.__chat_LLM(question)
         self.speech_bar.stop()
+
+    def check_all_connections(self):
+        self.print_textbox("API 连接中...")
+        if chatgpt.connect():
+            self.print_textbox("API 连接成功")
+        else:
+            self.print_textbox("[错误] API 连接失败，请检查 API 配置")
+
+        self.print_textbox("串口连接中...")
+        port = self.usb_combobox.get()
+        if cmd.connect(port):
+            self.print_textbox(f"串口 {port} 连接成功")
+        else:
+            self.print_textbox(f"[错误] 串口 {port} 连接失败，请检查串口配置")
+        self.print_textbox("初始化成功\n")
 
 
 if __name__ == "__main__":

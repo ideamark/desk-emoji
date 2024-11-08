@@ -47,6 +47,12 @@ logger.addHandler(info_handler)
 logger.addHandler(stream_handler)
 
 
+def error(e="", msg=""):
+    print(f"[Error] {msg}. See details in logs/error.log")
+    logger.error(msg)
+    logger.error(e)
+
+
 class ChatGPT(object):
 
     def __init__(self):
@@ -74,27 +80,22 @@ class ChatGPT(object):
             json.dump(data, fp, indent=4)
 
     def connect(self, api_url="", api_key=""):
-        self.client = OpenAI(
-            base_url = api_url,
-            api_key = api_key
-        )
-
-    def reconnect(self):
-        api_url, api_key = self.read_json()
-        self.connect(api_url, api_key)
-
-    def check_status(self):
+        if not api_url or not api_key:
+            api_url, api_key = self.read_json()
         try:
-            self.reconnect()
+            self.client = OpenAI(
+                base_url = api_url,
+                api_key = api_key
+            )
             self.client.models.list()
             logger.info("Connect to OpenAI API Success!")
             return True
         except Exception as e:
-            error(e, "Connect to OpenAI API Failed! Please check the API url and key")
+            error(e, "Connect to OpenAI API Failed! Please check the API configuration")
             return False
 
 
-chat_gpt = ChatGPT()
+chatgpt = ChatGPT()
 
 
 class CmdClient(object):
@@ -103,11 +104,18 @@ class CmdClient(object):
         self.port = ''
         self.ser = None
 
+    def __unique_ports(self, ports):
+        port_list = []
+        for port in ports:
+            if port not in port_list:
+                port_list.append(port)
+        return port_list
+
     def list_ports(self):
         ports = serial.tools.list_ports.comports()
-        matching_ports = [port for port in ports if platform.system() == 'Windows' or "serial" in port.device.lower()]
-        non_matching_ports = [port for port in ports if port not in matching_ports]
-        return matching_ports + non_matching_ports
+        matching_ports = [port.device for port in ports if platform.system() == 'Windows' or "serial" in port.device.lower()]
+        non_matching_ports = [port.device for port in ports if port not in matching_ports]
+        return self.__unique_ports(matching_ports + non_matching_ports)
 
     def select_port(self):
         ports = self.list_ports()
@@ -120,19 +128,18 @@ class CmdClient(object):
                           carousel=True)
         ]
         answers = inquirer.prompt(questions)
-        port = answers['port']
-        self.port = port
-        return port
+        self.port = answers['port']
+        return self.port
 
-    def connect(self, port=None, baud_rate=115200):
+    def connect(self, port="", baud_rate=115200):
         try:
-            port = port if port else self.port.device
+            port = port if port else self.port
             self.ser = serial.Serial(port, baud_rate, timeout=1)
             logger.info(f"Connected to {port} at {baud_rate} baud rate.")
             return True
 
         except Exception as e:
-            error(e, "Connect to serial prot Failed")
+            error(e, f"Connect to {port} Failed")
             return False
 
     def read(self, port):
@@ -184,7 +191,7 @@ class Listener(object):
                     audio_file.write(audio_data.get_wav_data())
 
                 audio_file= open(audio_path, "rb")
-                transcription = chat_gpt.client.audio.transcriptions.create(
+                transcription = chatgpt.client.audio.transcriptions.create(
                     model="whisper-1",
                     file=audio_file
                 )
@@ -210,7 +217,7 @@ class Speaker(object):
 
     def say(self, text="", model="tts-1", voice="onyx", audio_path='output.mp3'):
         try:
-            response = chat_gpt.client.audio.speech.create(
+            response = chatgpt.client.audio.speech.create(
                 model=model,
                 voice=voice,
                 input=text
@@ -223,12 +230,6 @@ class Speaker(object):
 
 
 speaker = Speaker()
-
-
-def error(e="", msg=""):
-    print(f"[Error] {msg}. See details in logs/error.log")
-    logger.error(msg)
-    logger.error(e)
 
 
 def get_completion(model="gpt-4o-mini", temperature=0, history_messages=[], prompt=''):
@@ -268,7 +269,7 @@ Ensure to separate the response and sentiment by clearly labeling them.
     prompt_with_analysis = f"{prompt}\n\n{sentiment_request}"
     messages.append({"role": "user", "content": prompt_with_analysis})
 
-    response = chat_gpt.client.chat.completions.create(
+    response = chatgpt.client.chat.completions.create(
         model=model,
         messages=messages,
         temperature=temperature,

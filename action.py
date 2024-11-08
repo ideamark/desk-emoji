@@ -27,7 +27,7 @@ Hello 你好呀！我是Desk-Emoji，你的友好桌面机器人，致力于为�
 
 
 if __name__ == '__main__':
-    if not chat_gpt.check_status(): exit(1)
+    if not chatgpt.check(): exit(1)
     cmd.select_port()
     cmd.connect()
     print('\n表演中...\n')
