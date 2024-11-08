@@ -8,10 +8,12 @@ Desk-Emoji is a truly open-source AI desktop robot featuring an emoji screen, a 
 
 ### Hardware
 
-* Assamble 2 axis servos:
-  ![img](images/servo.png "servo")
-* OLED display connection:
+* OLED screen connection:
   ![img](images/oled.png "oled")
+
+* Servos connection:
+  ![img](images/servo.png "servo")
+
 
 ### Software
 
