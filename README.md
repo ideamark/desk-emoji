@@ -9,10 +9,10 @@ Desk-Emoji is a truly open-source AI desktop robot featuring an emoji screen, a 
 ### Hardware
 
 * OLED screen connection:
-  ![img](images/oled.png "oled")
+![](images/oled.png "oled")
 
 * Servos connection:
-  ![img](images/servo.png "servo")
+![](images/servo.png "servo")
 
 
 ### Software
@@ -31,7 +31,7 @@ Desk-Emoji is a truly open-source AI desktop robot featuring an emoji screen, a 
 * Launch the main program
 
   * `python main.py`
-  * ![1730990829645](images/gui.png)
+![](images/gui.png)
 * Test code
 
   * Test action: `python action.py`
