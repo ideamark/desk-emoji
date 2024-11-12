@@ -146,8 +146,8 @@ Desk-Emoji 桌面陪伴机器人
 2. 连接机器人，点击“串口” -> 下拉菜单选择串口 -> 点击“连接”
 
 
-杭州易问科技版权所有 2024.11.7
-邮箱：mark.yang@ewen.ltd
+杭州易问科技版权所有 2024.11
+联系：mark.yang@ewen.ltd
 """
         self.help_text_lable = ctk.CTkLabel(self.help_frame, text=help_text, anchor="w", justify="left", wraplength=380)
         self.help_text_lable.grid(row=0, column=0, padx=20, pady=20)
