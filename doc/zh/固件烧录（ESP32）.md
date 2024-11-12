@@ -1,0 +1,15 @@
+# 下载ESP32固件
+
+1. 首先从Espressif官网下载 [Flash Download Tools](https://www.espressif.com/../support/download/other-tools)（仅支持Windows）
+2. 从 [Github](https://github.com/ideamark/desk-emoji/releases) 上下载固件并解压。
+3. 将ESP32主板连接电脑，从设备管理器查看端口号（这里是COM5）
+
+![1731329767374](../image/download_firmware_esp32/1731329767374.png)
+
+4. 启动 flash_download_tool.exe, 选择 ESP32
+
+![1731329829146](../image/download_firmware_esp32/1731329829146.png)
+
+5. 按照如下配置载入bin文件，点击START完成烧录。
+
+![1731329869471](../image/download_firmware_esp32/1731329869471.png)
