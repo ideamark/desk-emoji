@@ -17,7 +17,7 @@ class App(ctk.CTk):
         # init window
         self.title("Desk-Emoji  v1.0.0")
         self.window_width = 700
-        self.window_height = 450
+        self.window_height = 500
         self.geometry(f"{self.window_width}x{self.window_height}")
         self.resizable(False, False)
         self.center_window()
@@ -81,8 +81,12 @@ class App(ctk.CTk):
         self.textbox.grid(row=0, column=0, columnspan=3, padx=(20, 20), pady=(20, 20), sticky="nsew")
 
         self.chat_msg = ctk.CTkEntry(self.home_frame)
-        self.chat_msg.grid(row=1, column=0, columnspan=3, padx=20, pady=0, sticky="nsew")
+        self.chat_msg.grid(row=1, column=0, columnspan=2, padx=20, pady=0, sticky="ew")
         self.chat_msg.bind("<Return>", self.chat_msg_event)
+
+        self.chat_button = ctk.CTkButton(self.home_frame, text="发送", height=40,
+                                         command=self.chat_msg_event)
+        self.chat_button.grid(row=1, column=2, padx=20, pady=20, sticky='e')
 
         self.speaker_switch = ctk.CTkSwitch(self.home_frame, text="扬声器")
         self.speaker_switch.grid(row=2, column=0, padx=20, pady=20, sticky="nsew")
@@ -92,10 +96,9 @@ class App(ctk.CTk):
         self.speech_bar.grid(row=2, column=1, padx=20, pady=20, sticky="e")
         self.speech_bar.configure(mode="indeterminate")
 
-        self.speech_button = ctk.CTkButton(self.home_frame, text="说话", height=40,
+        self.speech_button = ctk.CTkButton(self.home_frame, text="语音对话", height=40,
                                            command=self.speech_button_event)
         self.speech_button.grid(row=2, column=2, padx=20, pady=20, sticky='e')
-        self.original_button_color = ctk.ThemeManager.theme["CTkButton"]["fg_color"]
 
         # create usb frame
         self.usb_frame = ctk.CTkFrame(self, corner_radius=0, fg_color="transparent")
@@ -251,7 +254,7 @@ Desk-Emoji 桌面陪伴机器人
                 speaker.say(answer)
             threading.Thread(target=act_emotion, args=(emotion,)).start()
 
-    def chat_msg_event(self, event):
+    def chat_msg_event(self, event=None):
         question = self.chat_msg.get()
         if question:
             self.chat_msg.delete(0, tk.END)
