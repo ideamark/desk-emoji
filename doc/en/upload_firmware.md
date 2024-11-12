@@ -1,8 +1,10 @@
-# Upload Firmware for ESP32 Board
+# Upload Firmware to ESP32 Board
+
+Attention: firmware has already been uploaded. This tutorial is intended only for updates.
 
 1. Download the [Flash Download Tools](https://www.espressif.com/../support/download/other-tools) from Espressif website. (Windows only)
-2. Download ESP32 firmware from [Github](https://github.com/ideamark/desk-emoji/releases) and unzip.
-3. Connect the ESP32 board to PC, check the USB port COM number
+3. Download ESP32 firmware from [Github](https://github.com/ideamark/desk-emoji/releases) and unzip.
+4. Connect the ESP32 board to PC, check the USB port COM number
 
 ![1731329767374](../image/download_firmware_esp32/1731329767374.png)
 
