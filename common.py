@@ -9,6 +9,8 @@ import random
 import serial
 import serial.tools.list_ports
 import speech_recognition as sr
+import asyncio
+from bleak import BleakClient, BleakScanner
 from concurrent.futures import ThreadPoolExecutor
 from openai import OpenAI
 from langchain.memory import ConversationBufferMemory
@@ -172,6 +174,51 @@ class CmdClient(object):
 
 
 cmd = CmdClient()
+
+
+class BLEClient(object):
+    def __init__(self, device_name="Desk-Emoji", 
+                 service_uuid="4db9a22d-6db4-d9fe-4d93-38e350abdc3c",
+                 characteristic_uuid="ff1cdaef-0105-e4fb-7be2-018500c2e927"):
+        self.device_name = device_name
+        self.service_uuid = service_uuid
+        self.characteristic_uuid = characteristic_uuid
+        self.device_address = None
+        self.client = None
+
+    async def discover_and_connect(self):
+        print("Scanning for Desk-Emoji...")
+        devices = await BleakScanner.discover()
+        for device in devices:
+            if device.name == self.device_name:
+                self.device_address = device.address
+                print(f"Found {self.device_name} at {self.device_address}")
+                break
+        else:
+            print(f"Device {self.device_name} not found!")
+            return
+
+        self.client = BleakClient(self.device_address)
+        try:
+            await self.client.connect()
+            print(f"Connected to {self.device_name} at {self.device_address}")
+        except Exception as e:
+            print(f"Failed to connect to {self.device_name}: {e}")
+
+    async def send(self, data):
+        if self.client and self.client.is_connected:
+            try:
+                await self.client.write_gatt_char(self.characteristic_uuid, data.encode('utf-8'))
+                print(f"Sent to {self.device_name}: {data}")
+            except Exception as e:
+                print(f"Failed to send data: {e}")
+        else:
+            print("Not connected to any device.")
+
+    async def disconnect(self):
+        if self.client and self.client.is_connected:
+            await self.client.disconnect()
+            print(f"Disconnected from {self.device_name}")
 
 
 class Listener(object):
@@ -394,3 +441,23 @@ def act_emotion(emotion):
     else:
         act_random()
     cmd.send('head_center')
+
+
+async def main():
+    ble_client = BLEClient()
+    await ble_client.discover_and_connect()
+
+    try:
+        while True:
+            user_input = await asyncio.get_event_loop().run_in_executor(None, input, "Enter a string to send to ESP32 (or type 'exit' to quit): ")
+            if user_input.lower() == 'exit':
+                print("Exiting...")
+                break
+            await ble_client.send(user_input)
+            await asyncio.sleep(3)
+    finally:
+        await ble_client.disconnect()
+
+
+if __name__ == '__main__':
+    asyncio.run(main())

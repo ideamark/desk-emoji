@@ -11,3 +11,4 @@ pack.sh
 *.wav
 *.mp3
 *.spec
+Pipfile*

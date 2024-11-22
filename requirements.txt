@@ -8,3 +8,4 @@ PyAudio
 pygame == 2.5.2
 customtkinter == 5.2.2
 pillow == 10.3.0
+bleak == 0.22.3
