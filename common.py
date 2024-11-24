@@ -49,6 +49,30 @@ logger.addHandler(info_handler)
 logger.addHandler(stream_handler)
 
 
+eye_button_list = [
+    ("眨眼", "eye_blink"),
+    ("快乐", "eye_happy"),
+    ("难过", "eye_sad"),
+    ("生气气", "eye_anger"),
+    ("惊讶", "eye_surprise"),
+    ("向左看", "eye_left"),
+    ("向右看", "eye_right"),
+]
+
+
+head_button_list = [
+    ("左转", "head_left"),
+    ("右转", "head_right"),
+    ("抬头", "head_up"),
+    ("低头", "head_down"),
+    ("点头", "head_nod"),
+    ("摇头", "head_shake"),
+    ("向左环绕", "head_roll_left"),
+    ("向右环绕", "head_roll_right"),
+    ("归中", "head_center"),
+]
+
+
 def error(e="", msg=""):
     print(f"[Error] {msg}. See details in logs/error.log")
     logger.error(msg)
@@ -97,14 +121,12 @@ class ChatGPT(object):
             return False
 
 
-chatgpt = ChatGPT()
-
-
-class CmdClient(object):
+class SerialClient(object):
 
     def __init__(self):
         self.port = ''
         self.ser = None
+        self.connected = False
 
     def __unique_ports(self, ports):
         port_list = []
@@ -138,10 +160,11 @@ class CmdClient(object):
             port = port if port else self.port
             self.ser = serial.Serial(port, baud_rate, timeout=1)
             logger.info(f"Connected to {port} at {baud_rate} baud rate.")
+            self.connected = True
             return True
-
         except Exception as e:
             error(e, f"Connect to {port} Failed")
+            self.connected = False
             return False
 
     def read(self, port):
@@ -173,52 +196,69 @@ class CmdClient(object):
             error(e, "Serial port send message Failed!")
 
 
-cmd = CmdClient()
-
-
-class BLEClient(object):
-    def __init__(self, device_name="Desk-Emoji", 
-                 service_uuid="4db9a22d-6db4-d9fe-4d93-38e350abdc3c",
-                 characteristic_uuid="ff1cdaef-0105-e4fb-7be2-018500c2e927"):
+class BaseBluetoothClient(object):
+    def __init__(self, device_name="", service_uuid="", characteristic_uuid=""):
         self.device_name = device_name
         self.service_uuid = service_uuid
         self.characteristic_uuid = characteristic_uuid
-        self.device_address = None
         self.client = None
+        self.connected = False
 
-    async def discover_and_connect(self):
-        print("Scanning for Desk-Emoji...")
+    async def list_devices(self):
+        logger.info("Scanning devices...")
+        device_list = []
         devices = await BleakScanner.discover()
         for device in devices:
             if device.name == self.device_name:
-                self.device_address = device.address
-                print(f"Found {self.device_name} at {self.device_address}")
-                break
-        else:
-            print(f"Device {self.device_name} not found!")
-            return
+                device_list.append(device.address)
+        return device_list
 
-        self.client = BleakClient(self.device_address)
+    async def connect(self, device_address):
+        self.client = BleakClient(device_address)
         try:
             await self.client.connect()
-            print(f"Connected to {self.device_name} at {self.device_address}")
+            logger.info(f"Connected to {self.device_name} at {device_address}")
+            self.connected = True
+            return True
         except Exception as e:
-            print(f"Failed to connect to {self.device_name}: {e}")
+            logger.error(f"Failed to connect to {self.device_name}: {e}")
+            self.connected = False
+            return False
 
     async def send(self, data):
         if self.client and self.client.is_connected:
             try:
                 await self.client.write_gatt_char(self.characteristic_uuid, data.encode('utf-8'))
-                print(f"Sent to {self.device_name}: {data}")
+                logger.info(f"Sent to {self.device_name}: {data}")
             except Exception as e:
-                print(f"Failed to send data: {e}")
+                logger.error(f"Failed to send data: {e}")
         else:
-            print("Not connected to any device.")
+            logger.info("Not connected to any device.")
 
     async def disconnect(self):
         if self.client and self.client.is_connected:
             await self.client.disconnect()
-            print(f"Disconnected from {self.device_name}")
+            logger.info(f"Disconnected from {self.device_name}")
+
+
+class BluetoothClient(BaseBluetoothClient):
+    def __init__(self, device_name="Desk-Emoji", 
+                 service_uuid="4db9a22d-6db4-d9fe-4d93-38e350abdc3c",
+                 characteristic_uuid="ff1cdaef-0105-e4fb-7be2-018500c2e927"):
+        super().__init__(device_name, service_uuid, characteristic_uuid)
+        self.loop = asyncio.get_event_loop()
+
+    def list_devices(self):
+        return self.loop.run_until_complete(super().list_devices())
+
+    def connect(self, device_address):
+        return self.loop.run_until_complete(super().connect(device_address))
+
+    def send(self, data):
+        self.loop.run_until_complete(super().send(data))
+
+    def disconnect(self):
+        self.loop.run_until_complete(super().disconnect())
 
 
 class Listener(object):
@@ -231,7 +271,7 @@ class Listener(object):
         try:
             with sr.Microphone() as source:
                 print("开始说话...")
-                self.executor.submit(act_random, cmd)
+                self.executor.submit(act_random)
                 audio_data = self.recognizer.listen(source, timeout=timeout)
                 print("录音已完成")
                 with open(audio_path, "wb") as audio_file:
@@ -246,9 +286,6 @@ class Listener(object):
 
         except Exception as e:
             error(e, "Speech recognition Failed")
-
-
-listener = Listener()
 
 
 class Speaker(object):
@@ -276,7 +313,19 @@ class Speaker(object):
             error(e, "Speak Failed")
 
 
+# Instantiation
+chatgpt = ChatGPT()
+ser = SerialClient()
+blt = BluetoothClient()
+listener = Listener()
 speaker = Speaker()
+
+
+def send_cmd(command):
+    if ser.connected:
+        ser.send(command)
+    if blt.connected:
+        blt.send(command)
 
 
 def get_completion(model="gpt-4o-mini", temperature=0, history_messages=[], prompt=''):
@@ -336,7 +385,7 @@ Ensure to separate the response and sentiment by clearly labeling them.
 
 def chat(question):
     try:
-        if not question: return
+        if not question: return None, None
         logger.info(f"You: {question}")
         memory_content = memory.load_memory_variables(inputs={})
         history = memory_content.get('chat_history', [])
@@ -352,6 +401,31 @@ def chat(question):
         return "OpenAI 连接失败！请检查 API 配置", "(x_x)"
 
 
+def act_introduce():
+    text = '''
+Hello 你好呀！我是Desk-Emoji，你的友好桌面机器人，致力于为你的工作空间带来快乐和效率。
+凭借我充满活力的个性和实用的功能，我的目标是在辅助你完成日常任务的同时，为你带来乐趣。
+无论你需要讲个笑话、一句励志名言，还是仅仅一个微笑，我都在这里为你增添一天的光彩，让你的桌面体验更加愉悦。
+准备好与我一起探索 emoji 的创意世界了吗？Let's roll!。
+'''
+    speaker.say(text)
+    send_cmd('eye_happy')
+    send_cmd('head_roll')
+    send_cmd('eye_blink')
+    send_cmd('head_move 20, 15, 30')
+    send_cmd('eye_right')
+    send_cmd('head_move -40, 0, 20')
+    send_cmd('eye_blink')
+    send_cmd('head_center')
+    send_cmd('eye_blink')
+    send_cmd('eye_happy')
+    send_cmd('head_shake')
+    send_cmd('head_roll')
+    send_cmd('head_nod')
+    send_cmd('head_center')
+    send_cmd('eye_blink')
+
+
 def act_random(loop=False, sleep_min=0, sleep_max=8):
     def act():
         random_num = random.random()
@@ -362,102 +436,98 @@ def act_random(loop=False, sleep_min=0, sleep_max=8):
         else:
             selected_cmd = f"head_move {x} {y} 10"
 
-        cmd.send(selected_cmd)
+        send_cmd(selected_cmd)
         if "head_move" in selected_cmd:
             if x > 0 and random_num < 0.8:
-                cmd.send('eye_right')
+                send_cmd('eye_right')
             elif x < 0 and random_num < 0.8:
-                cmd.send('eye_left')
+                send_cmd('eye_left')
             elif random_num < 0.4:
-                cmd.send('eye_happy')
+                send_cmd('eye_happy')
             else:
-                cmd.send('eye_blink')
+                send_cmd('eye_blink')
     act()
-    cmd.send('head_center')
+    send_cmd('head_center')
     while loop:
         act()
         time.sleep(random.randint(sleep_min, sleep_max))
 
 
 def act_happy():
-    cmd.send('eye_happy')
+    send_cmd('eye_happy')
     command = random.choice(['head_nod', 'head_shake'])
-    cmd.send(command)
-    cmd.send('eye_blink')
+    send_cmd(command)
+    send_cmd('eye_blink')
 
 
 def act_sad():
-    cmd.send('head_move 0 100 10')
-    cmd.send('eye_sad')
-    cmd.send('head_shake')
-    cmd.send('head_center')
-    cmd.send('eye_blink')
+    send_cmd('head_move 0 100 10')
+    send_cmd('eye_sad')
+    send_cmd('head_shake')
+    send_cmd('head_center')
+    send_cmd('eye_blink')
 
 
 def act_anger():
-    cmd.send('eye_anger')
+    send_cmd('eye_anger')
     for i in range(2):
         command = random.choice(['head_nod', 'head_shake'])
-        cmd.send(command)
-    cmd.send('eye_blink')
+        send_cmd(command)
+    send_cmd('eye_blink')
 
 
 def act_surprise():
-    cmd.send('eye_surprise')
-    cmd.send('head_shake')
+    send_cmd('eye_surprise')
+    send_cmd('head_shake')
     time.sleep(1)
-    cmd.send('eye_blink')
+    send_cmd('eye_blink')
 
 
 def act_curiosity():
     def look_side(x_offset):
         if x_offset > 0:
-            cmd.send('eye_right')
+            send_cmd('eye_right')
         else:
-            cmd.send('eye_left')
+            send_cmd('eye_left')
 
     x_value = random.randint(15, 25)
     y_value = random.randint(15, 30)
     x_offset = random.choice([x_value * -1, x_value])
     y_offset = random.choice([y_value * -1, y_value])
-    cmd.send(f'head_move {x_offset} {y_offset} 20')
+    send_cmd(f'head_move {x_offset} {y_offset} 20')
     look_side(x_offset)
-    cmd.send(f'head_move {x_offset * -2} 10 15')
-    cmd.send('head_center')
-    cmd.send('eye_blink')
+    send_cmd(f'head_move {x_offset * -2} 10 15')
+    send_cmd('head_center')
+    send_cmd('eye_blink')
 
 
 def act_emotion(emotion):
-    if 'happy' in emotion:
-        act_happy()
-    elif 'sad' in emotion:
-        act_sad()
-    elif 'anger' in emotion:
-        act_anger()
-    elif 'surprise' in emotion or 'undetected' in emotion:
-        act_surprise()
-    elif 'curious' in emotion:
-        act_curiosity()
-    else:
-        act_random()
-    cmd.send('head_center')
-
-
-async def main():
-    ble_client = BLEClient()
-    await ble_client.discover_and_connect()
-
-    try:
-        while True:
-            user_input = await asyncio.get_event_loop().run_in_executor(None, input, "Enter a string to send to ESP32 (or type 'exit' to quit): ")
-            if user_input.lower() == 'exit':
-                print("Exiting...")
-                break
-            await ble_client.send(user_input)
-            await asyncio.sleep(3)
-    finally:
-        await ble_client.disconnect()
+    if emotion:
+        if 'happy' in emotion:
+            act_happy()
+        elif 'sad' in emotion:
+            act_sad()
+        elif 'anger' in emotion:
+            act_anger()
+        elif 'surprise' in emotion or 'undetected' in emotion:
+            act_surprise()
+        elif 'curious' in emotion:
+            act_curiosity()
+        else:
+            act_random()
+        send_cmd('head_center')
 
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    devices = blt.list_devices()
+    if devices:
+        device_address = devices[0]
+        blt.connect(device_address)
+        while True:
+            command = input('Type command (type "exit" to exit): ')
+            blt.send(command)
+            if command == 'exit':
+                blt.disconnect()
+                break
+    else:
+        print("No devices found.")
