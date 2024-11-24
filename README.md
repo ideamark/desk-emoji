@@ -6,6 +6,10 @@ Desk-Emoji is a truly open-source AI desktop robot featuring an emoji screen, a 
 
 More details in doc folder.
 
+## Shopping
+
+* [Taobao Shop]( https://m.tb.cn/h.TclZzcV4aOoAzmj)
+
 ## Author
 
 * Mark Yang
