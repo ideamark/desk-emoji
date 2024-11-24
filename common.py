@@ -10,6 +10,7 @@ import serial
 import serial.tools.list_ports
 import speech_recognition as sr
 import asyncio
+import threading
 from bleak import BleakClient, BleakScanner
 from concurrent.futures import ThreadPoolExecutor
 from openai import OpenAI
@@ -49,6 +50,7 @@ logger.addHandler(info_handler)
 logger.addHandler(stream_handler)
 
 
+# Command button list
 eye_button_list = [
     ("眨眼", "eye_blink"),
     ("快乐", "eye_happy"),
@@ -242,23 +244,30 @@ class BaseBluetoothClient(object):
 
 
 class BluetoothClient(BaseBluetoothClient):
-    def __init__(self, device_name="Desk-Emoji", 
+    def __init__(self, device_name="Desk-Emoji",
                  service_uuid="4db9a22d-6db4-d9fe-4d93-38e350abdc3c",
                  characteristic_uuid="ff1cdaef-0105-e4fb-7be2-018500c2e927"):
         super().__init__(device_name, service_uuid, characteristic_uuid)
-        self.loop = asyncio.get_event_loop()
+        self.loop_thread = threading.Thread(target=self._run_event_loop)
+        self.loop_thread.daemon = True
+        self.loop = asyncio.new_event_loop()
+        self.loop_thread.start()
+
+    def _run_event_loop(self):
+        asyncio.set_event_loop(self.loop)
+        self.loop.run_forever()
 
     def list_devices(self):
-        return self.loop.run_until_complete(super().list_devices())
+        return asyncio.run_coroutine_threadsafe(super().list_devices(), self.loop).result()
 
     def connect(self, device_address):
-        return self.loop.run_until_complete(super().connect(device_address))
+        return asyncio.run_coroutine_threadsafe(super().connect(device_address), self.loop).result()
 
     def send(self, data):
-        self.loop.run_until_complete(super().send(data))
+        asyncio.run_coroutine_threadsafe(super().send(data), self.loop).result()
 
     def disconnect(self):
-        self.loop.run_until_complete(super().disconnect())
+        asyncio.run_coroutine_threadsafe(super().disconnect(), self.loop).result()
 
 
 class Listener(object):
@@ -518,6 +527,7 @@ def act_emotion(emotion):
         send_cmd('head_center')
 
 
+# Test
 if __name__ == '__main__':
     devices = blt.list_devices()
     if devices:
