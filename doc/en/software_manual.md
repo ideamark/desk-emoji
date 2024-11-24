@@ -1,8 +1,8 @@
 ## Installation
 
 * Download and install Python from [python.org](https://www.python.org/). ( Recommend version: >=3.9, <=3.11)
-* For MacOS or Linux: `./start.sh`
-* For Windows: `.\start.bat`
+* For MacOS or Linux, run command in terminal: `./start.sh`
+* For Windows, double click `start.bat to launch the main program.`
 * Please be patient during the installation of dependencies on the first startup.
 
 ## Usage
