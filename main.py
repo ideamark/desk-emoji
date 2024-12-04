@@ -1,23 +1,63 @@
 import os
+import subprocess
 import threading
 from PIL import Image
 import tkinter as tk
 import customtkinter as ctk
+import webbrowser
 
 from common import *
+from connect import *
+from audio import *
+from gpt import *
+
+
+blt = BluetoothClient()
+ser = SerialClient()
+llm = GPT()
+listener = Listener(llm)
+speaker = Speaker(llm)
+
+
+def chat(question):
+    try:
+        if not question: return None, None
+        logger.info(f"You: {question}")
+        response = llm.chat(question)
+        logger.info(f"Bot: {response}")
+        return response
+    except Exception as e:
+        error(e, "Chat Failed!")
+        return "OpenAI 连接失败！请检查 API 配置"
+
+
+def send_cmd(cmd):
+    cmd = json.dumps({"actions": [cmd]})
+    if blt.connected:
+        blt.send(cmd)
+    if ser.connected:
+        ser.send(cmd)
+
+
+def send_response(cmd):
+    if blt.connected:
+        blt.send(cmd)
+    if ser.connected:
+        ser.send(cmd)
 
 
 class App(ctk.CTk):
     def __init__(self):
 
         super().__init__()
-        title = "Desk-Emoji v1.1.0"
+        title = f"Desk-Emoji {VERSION}"
 
         # flags
         self.checked = False
         self.api_connected = False
         self.usb_connected = False
         self.blt_connected = False
+        self.firmware = ""
 
         # init window
         self.title(title)
@@ -42,13 +82,15 @@ class App(ctk.CTk):
                                      dark_image=Image.open(os.path.join(icon_path, "usb_light.png")), size=(20, 20))
         self.api_icon = ctk.CTkImage(light_image=Image.open(os.path.join(icon_path, "api_dark.png")),
                                      dark_image=Image.open(os.path.join(icon_path, "api_light.png")), size=(20, 20))
+        self.firmware_icon = ctk.CTkImage(light_image=Image.open(os.path.join(icon_path, "firmware_dark.png")),
+                                          dark_image=Image.open(os.path.join(icon_path, "firmware_light.png")), size=(20, 20))
         self.help_icon = ctk.CTkImage(light_image=Image.open(os.path.join(icon_path, "help_dark.png")),
                                       dark_image=Image.open(os.path.join(icon_path, "help_light.png")), size=(20, 20))
 
         # create navigation frame
         self.navigation_frame = ctk.CTkFrame(self, corner_radius=0)
         self.navigation_frame.grid(row=0, column=0, sticky="nsew")
-        self.navigation_frame.grid_rowconfigure(5, weight=1)
+        self.navigation_frame.grid_rowconfigure(7, weight=1)
 
         self.navigation_frame_label = ctk.CTkLabel(self.navigation_frame, text="  Desk-Emoji", image=self.logo_image,
                                                              compound="left", font=ctk.CTkFont(size=15, weight="bold"))
@@ -74,14 +116,19 @@ class App(ctk.CTk):
                                         image=self.api_icon, anchor="w", command=self.api_button_event)
         self.api_button.grid(row=4, column=0, sticky="ew")
 
+        self.firmware_button = ctk.CTkButton(self.navigation_frame, corner_radius=0, height=40, border_spacing=10, text="固件",
+                                             fg_color="transparent", text_color=("gray10", "gray90"), hover_color=("gray70", "gray30"),
+                                             image=self.firmware_icon, anchor="w", command=self.firmware_button_event)
+        self.firmware_button.grid(row=5, column=0, sticky="ew")
+
         self.help_button = ctk.CTkButton(self.navigation_frame, corner_radius=0, height=40, border_spacing=10, text="帮助",
                                          fg_color="transparent", text_color=("gray10", "gray90"), hover_color=("gray70", "gray30"),
                                          image=self.help_icon, anchor="w", command=self.help_button_event)
-        self.help_button.grid(row=5, column=0, sticky="ew")
+        self.help_button.grid(row=6, column=0, sticky="ew")
 
         self.appearance_mode_menu = ctk.CTkOptionMenu(self.navigation_frame, values=["System", "Light", "Dark"],
                                                       command=self.change_appearance_mode_event)
-        self.appearance_mode_menu.grid(row=6, column=0, padx=20, pady=20, sticky="s")
+        self.appearance_mode_menu.grid(row=7, column=0, padx=20, pady=20, sticky="s")
 
         # create chat frame
         self.chat_frame = ctk.CTkFrame(self, corner_radius=0, fg_color="transparent")
@@ -151,8 +198,8 @@ class App(ctk.CTk):
         self.blt_combobox.grid(row=0, column=0, columnspan=2, padx=20, pady=20, sticky="nsew")
         self.blt_combobox.set("")
 
-        self.blt_scan_button = ctk.CTkButton(self.connect_tabview.tab("蓝牙"), text="扫描", command=self.blt_scan_button_event)
-        self.blt_scan_button.grid(row=1, column=1, padx=20, pady=10)
+        self.blt_refresh_button = ctk.CTkButton(self.connect_tabview.tab("蓝牙"), text="刷新", command=self.blt_refresh_button_event)
+        self.blt_refresh_button.grid(row=1, column=1, padx=20, pady=10)
 
         self.blt_connect_button = ctk.CTkButton(self.connect_tabview.tab("蓝牙"), text="连接", command=self.blt_connect_button_event)
         self.blt_connect_button.grid(row=2, column=1, padx=20, pady=10)
@@ -160,12 +207,12 @@ class App(ctk.CTk):
         self.blt_flag_label = ctk.CTkLabel(self.connect_tabview.tab("蓝牙"), text="")
         self.blt_flag_label.grid(row=2, column=0, padx=20, pady=10)
 
-        self.usb_combobox = ctk.CTkComboBox(self.connect_tabview.tab("USB"), values=ser.list_ports())
+        self.usb_combobox = ctk.CTkComboBox(self.connect_tabview.tab("USB"), values=[])
         self.usb_combobox.grid(row=0, column=0, columnspan=2, padx=20, pady=20, sticky="nsew")
         self.usb_combobox.set("")
 
-        self.usb_scan_button = ctk.CTkButton(self.connect_tabview.tab("USB"), text="扫描", command=self.usb_scan_button_event)
-        self.usb_scan_button.grid(row=1, column=1, padx=20, pady=10)
+        self.usb_refresh_button = ctk.CTkButton(self.connect_tabview.tab("USB"), text="刷新", command=self.usb_refresh_button_event)
+        self.usb_refresh_button.grid(row=1, column=1, padx=20, pady=10)
 
         self.usb_connect_button = ctk.CTkButton(self.connect_tabview.tab("USB"), text="连接", command=self.usb_connect_button_event)
         self.usb_connect_button.grid(row=2, column=1, padx=20, pady=10)
@@ -185,19 +232,42 @@ class App(ctk.CTk):
 
         self.api_url_label = ctk.CTkLabel(self.api_tabview.tab("OpenAI"), text="API URL: ")
         self.api_url_label.grid(row=0, column=0, padx=20, pady=20, sticky="w")
-        self.api_url = ctk.CTkEntry(self.api_tabview.tab("OpenAI"))
-        self.api_url.grid(row=0, column=1, padx=20, pady=20, sticky="nsew")
+        self.api_url_entry = ctk.CTkEntry(self.api_tabview.tab("OpenAI"))
+        self.api_url_entry.grid(row=0, column=1, padx=20, pady=20, sticky="nsew")
 
         self.api_key_label = ctk.CTkLabel(self.api_tabview.tab("OpenAI"), text="API Key: ")
         self.api_key_label.grid(row=1, column=0, padx=20, pady=20, sticky="w")
-        self.api_key = ctk.CTkEntry(self.api_tabview.tab("OpenAI"))
-        self.api_key.grid(row=1, column=1, padx=20, pady=20, sticky="nsew")
+        self.api_key_entry = ctk.CTkEntry(self.api_tabview.tab("OpenAI"))
+        self.api_key_entry.grid(row=1, column=1, padx=20, pady=20, sticky="nsew")
 
         self.save_flag_label = ctk.CTkLabel(self.api_tabview.tab("OpenAI"), text="")
         self.save_flag_label.grid(row=2, column=0, padx=20, pady=20)
 
         self.api_save_button = ctk.CTkButton(self.api_tabview.tab("OpenAI"), text="连接", command=self.api_save_button_event)
         self.api_save_button.grid(row=2, column=1, padx=20, pady=10)
+
+        # create firmware frame
+        self.firmware_frame = ctk.CTkFrame(self, corner_radius=0, fg_color="transparent")
+        self.firmware_frame.grid_columnconfigure(0, weight=1)
+        self.firmware_frame.grid_columnconfigure(0, weight=0)
+
+        self.file_entry = ctk.CTkEntry(self.firmware_frame, width=300)
+        self.file_entry.grid(row=0, column=0, padx=20, pady=20, sticky="w")
+        self.import_button = ctk.CTkButton(self.firmware_frame, text="导入", command=self.import_firmware)
+        self.import_button.grid(row=0, column=1, padx=20, pady=20, sticky="e")
+
+        self.serial_combobox = ctk.CTkComboBox(self.firmware_frame, width=300, values=ser.list_ports())
+        self.serial_combobox.grid(row=1, column=0, padx=20, pady=10, sticky="w")
+        self.refresh_serial_button = ctk.CTkButton(self.firmware_frame, text="刷新", command=ser.list_ports())
+        self.refresh_serial_button.grid(row=1, column=1, padx=20, pady=10, sticky="e")
+
+        self.terminal_textbox = ctk.CTkTextbox(self.firmware_frame, width=500, height=300)
+        self.terminal_textbox.grid(row=2, column=0, columnspan=2, padx=10, pady=10, sticky="nsew")
+
+        self.open_url_button = ctk.CTkButton(self.firmware_frame, text="固件下载", command=self.open_url)
+        self.open_url_button.grid(row=3, column=0, padx=20, pady=10, sticky="w")
+        self.burn_button = ctk.CTkButton(self.firmware_frame, text="烧录", command=self.burn_firmware)
+        self.burn_button.grid(row=3, column=1, padx=20, pady=10)
 
         # create help frame
         self.help_frame = ctk.CTkFrame(self, corner_radius=0, fg_color="transparent")
@@ -207,7 +277,7 @@ class App(ctk.CTk):
 {title} 桌面陪伴机器人
 
 初次配置：
-1. 连接机器人 -> 点击“串口” -> 选择 蓝牙 或 USB -> “扫描” -> “连接”
+1. 连接机器人 -> 点击“串口” -> 选择 蓝牙 或 USB -> “连接”
 2. 点击“API” -> 配置 URL 网址和 Key（支持中转）-> ”连接“
 
 使用说明：
@@ -232,21 +302,17 @@ class App(ctk.CTk):
 
     def load_api_key(self):
         try:
-            url, key = chatgpt.read_json()
-            if not self.api_url.get():
-                self.api_url.insert(0, url)
-            if not self.api_key.get():
-                self.api_key.insert(0, key)
+            url, key = llm.read_json()
+            if not self.api_url_entry.get():
+                self.api_url_entry.insert(0, url)
+            if not self.api_key_entry.get():
+                self.api_key_entry.insert(0, key)
         except Exception:
             pass
 
     def save_api_key(self):
-        data = {
-            'api_url': self.api_url.get(),
-            'api_key': self.api_key.get()
-        }
-        chatgpt.write_json(data)
-        logger.info(f"Saved API Key to {chatgpt.json_path}")
+        llm.write_json(self.api_url_entry.get(), self.api_key_entry.get())
+        logger.info(f"Saved API Key to {llm.json_path}")
 
     def print_textbox(self, text):
         self.textbox.insert(tk.END, f"{text}\n")
@@ -275,6 +341,10 @@ class App(ctk.CTk):
             self.api_frame.grid(row=0, column=1, sticky="nsew")
         else:
             self.api_frame.grid_forget()
+        if name == "firmware":
+            self.firmware_frame.grid(row=0, column=1, sticky="nsew")
+        else:
+            self.firmware_frame.grid_forget()
         if name == "help":
             self.help_frame.grid(row=0, column=1, sticky="nsew")
         else:
@@ -295,7 +365,7 @@ class App(ctk.CTk):
         self.blt_flag_label.configure(text="", fg_color="transparent")
         self.usb_flag_label.configure(text="", fg_color="transparent")
 
-    def blt_scan_button_event(self):
+    def blt_refresh_button_event(self):
         devices = blt.list_devices()
         if not devices:
             self.blt_flag_label.configure(text="无可用设备", text_color="red")
@@ -307,6 +377,7 @@ class App(ctk.CTk):
     def blt_connect_button_event(self):
         device_address = self.blt_combobox.get()
         if not device_address: return
+        if ser.connected: ser.disconnect()
         if blt.connect(device_address):
             self.blt_connected = True
             self.blt_flag_label.configure(text="连接成功", text_color="green")
@@ -314,7 +385,7 @@ class App(ctk.CTk):
             self.blt_connected = False
             self.blt_flag_label.configure(text="连接失败", text_color="red")
 
-    def usb_scan_button_event(self):
+    def usb_refresh_button_event(self):
         ports = ser.list_ports()
         if not ports:
             self.usb_flag_label.configure(text="无可用设备", text_color="red")
@@ -326,6 +397,7 @@ class App(ctk.CTk):
     def usb_connect_button_event(self):
         port = self.usb_combobox.get()
         if not port: return
+        if blt.connected: blt.disconnect()
         if ser.connect(port):
             self.usb_connected = True
             self.usb_flag_label.configure(text="连接成功", text_color="green")
@@ -340,22 +412,26 @@ class App(ctk.CTk):
 
     def api_save_button_event(self):
         self.save_api_key()
-        if chatgpt.connect():
+        if llm.connect():
             self.save_flag_label.configure(text="连接成功", text_color="green")
         else:
             self.save_flag_label.configure(text="连接失败", text_color="red")
+
+    def firmware_button_event(self):
+        self.select_frame_by_name("firmware")
 
     def help_button_event(self):
         self.select_frame_by_name("help")
 
     def __chat_LLM(self, question):
         self.print_textbox(f"You:\t{question}")
-        answer, emotion = chat(question)
-        self.print_textbox(f"Bot:\t{answer}")
-        self.print_textbox(f"Emo:\t{emotion}\n")
+        response = chat(question)
+        answer = json.loads(response)["answer"]
+        self.print_textbox(f"Bot:\t{answer}\n")
         if bool(self.speaker_switch.get()):
-            speaker.say(text=answer, voice=self.voice_combobox.get())
-        threading.Thread(target=act_emotion, args=(emotion,)).start()
+            voice = self.voice_combobox.get()
+            speaker.say(text=answer, voice=voice)
+        threading.Thread(target=send_response, args=(response,)).start()
 
     def chat_msg_event(self, event=None):
         question = self.chat_msg.get()
@@ -381,7 +457,7 @@ class App(ctk.CTk):
     def check_connections(self):
         success = True
         if not self.checked:    
-            if self.api_connected or chatgpt.connect():
+            if self.api_connected or llm.connect():
                 self.print_textbox("API 连接成功")
             else:
                 success = False
@@ -400,6 +476,77 @@ class App(ctk.CTk):
                 self.checked = True
             else:
                 self.print_textbox("初始化失败\n")
+
+    def import_firmware(self):
+        file_path = tk.filedialog.askopenfilename(filetypes=[("Binary Files", "*.bin")])
+        if file_path:
+            self.firmware = file_path
+            self.file_entry.delete(0, "end")
+            self.file_entry.insert(0, self.firmware)
+
+    def burn_firmware(self):
+        if not self.firmware:
+            self.terminal_textbox.insert("end", "请先导入固件文件\n")
+            return
+
+        esptool = "esptool.py"
+        if platform.system() == 'Windows':
+            esptool = "esptool"
+
+        chip = "esp32"
+        if "esp32s3" in self.firmware:
+            chip = "esp32s3"
+
+        selected_port = self.serial_combobox.get()
+
+        command = [
+            esptool,
+            "--chip", chip,
+            "--port", selected_port,
+            "--baud", "460800",
+            "--before", "default_reset",
+            "--after", "hard_reset",
+            "write_flash",
+            "-z",
+            "--flash_mode", "keep",
+            "--flash_freq", "keep",
+            "--flash_size", "keep",
+            "0x0", self.firmware
+        ]
+
+        threading.Thread(target=self.run_command, args=(command,), daemon=True).start()
+
+    def run_command(self, command):
+        try:
+            process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+            for line in iter(process.stdout.readline, ""):
+                self.terminal_textbox.insert("end", line)
+                self.terminal_textbox.see("end")
+                self.terminal_textbox.update_idletasks()
+
+            for line in iter(process.stderr.readline, ""):
+                self.terminal_textbox.insert("end", line)
+                self.terminal_textbox.see("end")
+                self.terminal_textbox.update_idletasks()
+
+            process.stdout.close()
+            process.stderr.close()
+            process.wait()
+
+            if process.returncode == 0:
+                self.terminal_textbox.insert("end", "\n烧录完成！\n")
+            else:
+                self.terminal_textbox.insert("end", f"\n烧录失败，错误码：{process.returncode}\n")
+            self.terminal_textbox.see("end")
+            self.terminal_textbox.update_idletasks()
+
+        except Exception as e:
+            self.terminal_textbox.insert("end", f"\n运行出错：{e}\n")
+
+    def open_url(self):
+            url = "https://gitee.com/ideamark/desk-emoji/releases"
+            webbrowser.open(url)
 
 
 if __name__ == "__main__":

@@ -5,8 +5,8 @@ build/
 backup/
 logs/
 keys.txt
-api.json
 pack.sh
+*.json
 *.swp
 *.wav
 *.mp3

@@ -15,3 +15,5 @@
   ![1731337588248](../image/software_manual/1731337588248.png)
 * Switch to action page for action test.
   ![1732460764803](../image/software_manual/1732460764803.png)
+* Switch to firmware page for firmware uploading.
+  ![1732460764804](../image/software_manual/1732460764804.png)
