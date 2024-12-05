@@ -251,15 +251,15 @@ class App(ctk.CTk):
         self.firmware_frame.grid_columnconfigure(0, weight=1)
         self.firmware_frame.grid_columnconfigure(0, weight=0)
 
-        self.file_entry = ctk.CTkEntry(self.firmware_frame, width=300)
-        self.file_entry.grid(row=0, column=0, padx=20, pady=20, sticky="w")
-        self.import_button = ctk.CTkButton(self.firmware_frame, text="导入", command=self.import_firmware)
-        self.import_button.grid(row=0, column=1, padx=20, pady=20, sticky="e")
+        self.firmware_entry = ctk.CTkEntry(self.firmware_frame, width=300)
+        self.firmware_entry.grid(row=0, column=0, padx=20, pady=20, sticky="w")
+        self.firmware_import_button = ctk.CTkButton(self.firmware_frame, text="导入", command=self.import_firmware)
+        self.firmware_import_button.grid(row=0, column=1, padx=20, pady=20, sticky="e")
 
         self.serial_combobox = ctk.CTkComboBox(self.firmware_frame, width=300, values=ser.list_ports())
         self.serial_combobox.grid(row=1, column=0, padx=20, pady=10, sticky="w")
-        self.refresh_serial_button = ctk.CTkButton(self.firmware_frame, text="刷新", command=ser.list_ports())
-        self.refresh_serial_button.grid(row=1, column=1, padx=20, pady=10, sticky="e")
+        self.ser_refresh_button = ctk.CTkButton(self.firmware_frame, text="刷新", command=self.ser_refresh_button_event)
+        self.ser_refresh_button.grid(row=1, column=1, padx=20, pady=10, sticky="e")
 
         self.terminal_textbox = ctk.CTkTextbox(self.firmware_frame, width=500, height=300)
         self.terminal_textbox.grid(row=2, column=0, columnspan=2, padx=10, pady=10, sticky="nsew")
@@ -323,6 +323,7 @@ class App(ctk.CTk):
         self.act_button.configure(fg_color=("gray75", "gray25") if name == "act" else "transparent")
         self.connect_button.configure(fg_color=("gray75", "gray25") if name == "connect" else "transparent")
         self.api_button.configure(fg_color=("gray75", "gray25") if name == "api" else "transparent")
+        self.firmware_button.configure(fg_color=("gray75", "gray25") if name == "firmware" else "transparent")
         self.help_button.configure(fg_color=("gray75", "gray25") if name == "help" else "transparent")
 
         if name == "chat":
@@ -367,12 +368,11 @@ class App(ctk.CTk):
 
     def blt_refresh_button_event(self):
         devices = blt.list_devices()
-        if not devices:
-            self.blt_flag_label.configure(text="无可用设备", text_color="red")
-            return
-        self.blt_combobox.configure(values=devices)
         if devices:
+            self.blt_combobox.configure(values=devices)
             self.blt_combobox.set(devices[0])
+        else:
+            self.blt_flag_label.configure(text="无可用设备", text_color="red")
 
     def blt_connect_button_event(self):
         device_address = self.blt_combobox.get()
@@ -387,12 +387,11 @@ class App(ctk.CTk):
 
     def usb_refresh_button_event(self):
         ports = ser.list_ports()
-        if not ports:
-            self.usb_flag_label.configure(text="无可用设备", text_color="red")
-            return
-        self.usb_combobox.configure(values=ports)
         if ports:
+            self.usb_combobox.configure(values=ports)
             self.usb_combobox.set(ports[0])
+        else:
+            self.usb_flag_label.configure(text="无可用设备", text_color="red")
 
     def usb_connect_button_event(self):
         port = self.usb_combobox.get()
@@ -419,6 +418,12 @@ class App(ctk.CTk):
 
     def firmware_button_event(self):
         self.select_frame_by_name("firmware")
+
+    def ser_refresh_button_event(self):
+        ports = ser.list_ports()
+        if ports:
+            self.serial_combobox.configure(values=ports)
+            self.serial_combobox.set(ports[0])
 
     def help_button_event(self):
         self.select_frame_by_name("help")
@@ -481,8 +486,8 @@ class App(ctk.CTk):
         file_path = tk.filedialog.askopenfilename(filetypes=[("Binary Files", "*.bin")])
         if file_path:
             self.firmware = file_path
-            self.file_entry.delete(0, "end")
-            self.file_entry.insert(0, self.firmware)
+            self.firmware_entry.delete(0, "end")
+            self.firmware_entry.insert(0, self.firmware)
 
     def burn_firmware(self):
         if not self.firmware:

@@ -4,8 +4,6 @@ Desk-Emoji is a truly open-source AI desktop robot featuring an emoji screen, a 
 
 ![img](images/photo.jpg "photo")
 
-More details in doc/en/ folder.
-
 ## Resource
 
 * [Attention!](doc/en/attention.md)
