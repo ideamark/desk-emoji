@@ -10,3 +10,4 @@ customtkinter == 5.2.2
 pillow == 10.3.0
 bleak == 0.22.3
 esptool
+httpx == 0.25.0
