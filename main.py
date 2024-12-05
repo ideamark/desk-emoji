@@ -1,6 +1,7 @@
 import os
 import subprocess
 import threading
+import random
 from PIL import Image
 import tkinter as tk
 import customtkinter as ctk
@@ -17,33 +18,6 @@ ser = SerialClient()
 llm = GPT()
 listener = Listener(llm)
 speaker = Speaker(llm)
-
-
-def chat(question):
-    try:
-        if not question: return None, None
-        logger.info(f"You: {question}")
-        response = llm.chat(question)
-        logger.info(f"Bot: {response}")
-        return response
-    except Exception as e:
-        error(e, "Chat Failed!")
-        return "OpenAI 连接失败！请检查 API 配置"
-
-
-def send_cmd(cmd):
-    cmd = json.dumps({"actions": [cmd]})
-    if blt.connected:
-        blt.send(cmd)
-    if ser.connected:
-        ser.send(cmd)
-
-
-def send_response(cmd):
-    if blt.connected:
-        blt.send(cmd)
-    if ser.connected:
-        ser.send(cmd)
 
 
 class App(ctk.CTk):
@@ -171,15 +145,18 @@ class App(ctk.CTk):
             button = ctk.CTkButton(
                 self.act_frame, 
                 text=button_name,
-                command=lambda cmd=button_command: send_cmd(cmd)
+                command=lambda cmd=button_command: self.send_cmd(cmd)
             )
             button.grid(row=i, column=0, padx=10, pady=10, sticky='w')
+        
+        button = ctk.CTkButton(self.act_frame, text="测试动画", command=lambda: self.send_cmd(random.choice(animations_list)))
+        button.grid(row=len(eye_button_list) + 1, column=0, padx=10, pady=10, sticky='w')
 
         for i, (button_name, button_command) in enumerate(head_button_list):
             button = ctk.CTkButton(
                 self.act_frame, 
                 text=button_name,
-                command=lambda cmd=button_command: send_cmd(cmd)
+                command=lambda cmd=button_command: self.send_cmd(cmd)
             )
             button.grid(row=i, column=1, padx=10, pady=10, sticky='w')
 
@@ -354,6 +331,30 @@ class App(ctk.CTk):
     def change_appearance_mode_event(self, new_appearance_mode):
         ctk.set_appearance_mode(new_appearance_mode)
 
+    def chat(self, question):
+        try:
+            if not question: return None, None
+            logger.info(f"You: {question}")
+            response = llm.chat(question)
+            logger.info(f"Bot: {response}")
+            return response
+        except Exception as e:
+            error(e, "Chat Failed!")
+            return "OpenAI 连接失败！请检查 API 配置"
+
+    def send_cmd(self, cmd):
+        cmd = json.dumps({"actions": [cmd]})
+        if blt.connected:
+            blt.send(cmd)
+        if ser.connected:
+            ser.send(cmd)
+
+    def send_response(self, cmd):
+        if blt.connected:
+            blt.send(cmd)
+        if ser.connected:
+            ser.send(cmd)
+
     def chat_button_event(self):
         self.select_frame_by_name("chat")
         self.check_connections()
@@ -430,13 +431,13 @@ class App(ctk.CTk):
 
     def __chat_LLM(self, question):
         self.print_textbox(f"You:\t{question}")
-        response = chat(question)
+        response = self.chat(question)
         answer = json.loads(response)["answer"]
         self.print_textbox(f"Bot:\t{answer}\n")
         if bool(self.speaker_switch.get()):
             voice = self.voice_combobox.get()
             speaker.say(text=answer, voice=voice)
-        threading.Thread(target=send_response, args=(response,)).start()
+        threading.Thread(target=self.send_response, args=(response,)).start()
 
     def chat_msg_event(self, event=None):
         question = self.chat_msg.get()

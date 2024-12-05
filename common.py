@@ -35,6 +35,10 @@ logger.addHandler(info_handler)
 logger.addHandler(stream_handler)
 
 # Prompts
+animations_string = "heart, calendar, face_id, cola, laugh, dumbbell, skateboard, battery, basketball, rugby, alarm, screen, " + \
+                    "wifi, youtube, tv, movie, cat, write, phone, sunny, cloudy, rainy, windy, snow, beer, walk, shit, cry, " + \
+                    "puzzled, football, volleyball, badminton, rice, gym, boat, thinking, money, wait, plane, rocket, ok, love"
+
 llm_role = """
 You are a small size desktop robot.
 You are funny and lovely.
@@ -46,7 +50,7 @@ You have no hands and legs, stick on the desk.
 I am your master.
 """
 
-llm_prompt = """
+llm_prompt = f"""
 You only need to respond with a list, no Chinese is required.
 ## Below are emoji functions
 Blink: eye_blink  
@@ -58,9 +62,7 @@ Look left: eye_left
 Look right: eye_right
 
 ## Below are animation functions
-heart, calendar, face_id, cola, laugh, dumbbell, skateboard, battery, basketball, rugby, alarm, screen, wifi, youtube, tv, movie, 
-cat, write, phone, sunny, cloudy, rainy, windy, snow, beer, walk, shit, cry, puzzled, football, volleyball, badminton, rice, gym, 
-boat, thinking, money, wait, plane, rocket, ok, love.
+{animations_string}
 
 ## Below are head functions
 Head turn left by 45 degrees: head_left  
@@ -74,6 +76,8 @@ Head roll to right: head_roll_right
 Head back to center: head_center  
 Delay for 1 second: delay
 
+""" + \
+"""
 ## Output restrictions
 You should directly output JSON, starting with `{` and ending with `}`, without including the ```json tags at the beginning or end.  
 In the "answer" key:
@@ -125,6 +129,9 @@ head_button_list = [
 ]
 
 
+animations_list = [item.strip() for item in animations_string.split(",")]
+
+
 def error(e="", msg=""):
     print(f"[Error] {msg}. See details in logs/error.log")
     logger.error(msg)
@@ -160,3 +167,7 @@ class BaseLLM(object):
         }
         with open(self.json_path, 'w') as fp:
             json.dump(data, fp, indent=4)
+
+
+if __name__ == "__main__":
+    print(animations_list)
