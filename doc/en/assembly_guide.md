@@ -47,3 +47,11 @@
 * Servos connection
 
   ![1731333473101](../image/assembly_guide/1731333473101.png)
+
+* For the ESP32 and ESP32-S3 boards, a capacitor of 100uF or higher should be connected between 3.3V and GND to enhance the stability of the main control chip.
+
+![1731333422501](../image/assembly_guide/1731333422501.jpg)
+
+* Note that electrolytic capacitors have positive and negative terminals.
+
+![1731333422502](../image/assembly_guide/1731333422502.jpg)
