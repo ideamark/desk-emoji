@@ -446,9 +446,10 @@ class App(ctk.CTk):
             threading.Thread(target=self.__chat_LLM, args=(question,)).start()
 
     def speech_button_event(self):
-        self.speech_button.configure(fg_color="#00FF00", 
-                                     hover_color="#00FF00", 
-                                     text_color="#000000",
+        self.speech_button.configure(fg_color="grey", 
+                                     hover_color="grey", 
+                                     text_color="black",
+                                     state="disabled",
                                      text="正在录音")
         threading.Thread(target=self.__process_speech).start()
 
@@ -457,6 +458,7 @@ class App(ctk.CTk):
         self.speech_button.configure(fg_color=self.origin_fg_color,
                                      hover_color=self.origin_hover_color,
                                      text_color=self.origin_text_color,
+                                     state="normal",
                                      text="语音")
         self.__chat_LLM(question)
 
