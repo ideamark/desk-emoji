@@ -1,8 +1,9 @@
 ## Installation
 
-* Download and install Python from [python.org](https://www.python.org/). ( Recommend version: >=3.9, <=3.11)
-* For MacOS or Linux, run command in terminal: `./start.sh`
+* Download and install Python from [python.org](https://www.python.org/). ( Recommend version: >=3.9, <=3.11). Make sure `python` and `pip` command can be execute in terminal.
+* Download [host software](https://github.com/ideamark/desk-emoji/archive/refs/heads/main.zip).
 * For Windows, double click `start.bat to launch the main program.`
+* For MacOS or Linux, run command in terminal: `./start.sh`
 * Please be patient during the installation of dependencies on the first startup.
 
 ## Usage
