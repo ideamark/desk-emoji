@@ -259,7 +259,7 @@ class App(ctk.CTk):
 
 使用说明：
 “对话”界面用于对话互动，可以发文字也可以语音，可以开关扬声器、更改声音
-“动作”界面用于测试动作，点击不同按钮触发不同动作
+“动作”界面用于测试表情和动作，点击不同按钮触发不同表情和动作
 
 
 杭州易问科技版权所有 2024.11
@@ -463,27 +463,19 @@ class App(ctk.CTk):
         self.__chat_LLM(question)
 
     def check_connections(self):
-        success = True
         if not self.checked:    
             if self.api_connected or llm.connect():
                 self.print_textbox("API 连接成功")
             else:
-                success = False
-                self.print_textbox("API 未连接，请检查配置")
+                self.print_textbox("API 未连接")
 
             if self.usb_connected:
                 self.print_textbox(f"USB 连接成功")
             elif self.blt_connected:
                 self.print_textbox(f"蓝牙 连接成功")
             else:
-                success = False
-                self.print_textbox(f"USB 或 蓝牙 未连接，请检查配置")
-
-            if success:
-                self.print_textbox("初始化成功\n")
-                self.checked = True
-            else:
-                self.print_textbox("初始化失败\n")
+                self.print_textbox(f"蓝牙 或 USB 未连接")
+            self.print_textbox("\n")
 
     def import_firmware(self):
         file_path = tk.filedialog.askopenfilename(filetypes=[("Binary Files", "*.bin")])

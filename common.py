@@ -4,7 +4,7 @@ import json
 
 
 # Set Version
-VERSION = "v1.2.0"
+VERSION = "v1.2.1"
 
 ## Set logger
 log_directory = 'logs'
@@ -34,11 +34,39 @@ logger.addHandler(error_handler)
 logger.addHandler(info_handler)
 logger.addHandler(stream_handler)
 
-# Prompts
-animations_string = "heart, calendar, face_id, cola, laugh, dumbbell, skateboard, battery, basketball, rugby, alarm, screen, " + \
-                    "wifi, youtube, tv, movie, cat, write, phone, sunny, cloudy, rainy, windy, snow, beer, walk, shit, cry, " + \
-                    "puzzled, football, volleyball, badminton, rice, gym, boat, thinking, money, wait, plane, rocket, ok, love"
 
+# Command button list
+eye_button_list = [
+    ("眨眼", "eye_blink"),
+    ("快乐", "eye_happy"),
+    ("难过", "eye_sad"),
+    ("生气气", "eye_anger"),
+    ("惊讶", "eye_surprise"),
+    ("向左看", "eye_left"),
+    ("向右看", "eye_right"),
+]
+
+
+head_button_list = [
+    ("左转", "head_left"),
+    ("右转", "head_right"),
+    ("抬头", "head_up"),
+    ("低头", "head_down"),
+    ("点头", "head_nod"),
+    ("摇头", "head_shake"),
+    ("向左环绕", "head_roll_left"),
+    ("向右环绕", "head_roll_right"),
+    ("归中", "head_center"),
+]
+
+
+animations_list = ["heart", "calendar", "face_id", "cola", "laugh", "dumbbell", "skateboard", "battery", "basketball", "rugby", "alarm", "screen",
+                   "wifi", "youtube", "tv", "movie", "cat", "write", "phone", "sunny", "cloudy", "rainy", "windy", "snow", "beer", "walk", "shit",
+                   "cry", "puzzled", "football", "volleyball", "badminton", "rice", "gym", "boat", "thinking", "money", "wait", "plane", "rocket",
+                   "ok", "love"]
+
+
+# Prompts
 llm_role = """
 You are a small size desktop robot.
 You are funny and lovely.
@@ -62,7 +90,7 @@ Look left: eye_left
 Look right: eye_right
 
 ## Below are animation functions
-{animations_string}
+{", ".join(animations_list)}
 
 ## Below are head functions
 Head turn left by 45 degrees: head_left  
@@ -103,33 +131,6 @@ My instruction: Smile. Your response: {"answer": "今天真开心", "actions": [
 
 ## My current instruction is:
 """
-
-# Command button list
-eye_button_list = [
-    ("眨眼", "eye_blink"),
-    ("快乐", "eye_happy"),
-    ("难过", "eye_sad"),
-    ("生气气", "eye_anger"),
-    ("惊讶", "eye_surprise"),
-    ("向左看", "eye_left"),
-    ("向右看", "eye_right"),
-]
-
-
-head_button_list = [
-    ("左转", "head_left"),
-    ("右转", "head_right"),
-    ("抬头", "head_up"),
-    ("低头", "head_down"),
-    ("点头", "head_nod"),
-    ("摇头", "head_shake"),
-    ("向左环绕", "head_roll_left"),
-    ("向右环绕", "head_roll_right"),
-    ("归中", "head_center"),
-]
-
-
-animations_list = [item.strip() for item in animations_string.split(",")]
 
 
 def error(e="", msg=""):

@@ -32,7 +32,7 @@ class Speaker(object):
         self.executor = ThreadPoolExecutor(max_workers=1)
         pygame.mixer.init()
         self.gpt = gpt
-    
+
     def _play_audio(self, audio_path):
         pygame.mixer.music.load(audio_path)
         pygame.mixer.music.play()
@@ -41,6 +41,9 @@ class Speaker(object):
 
     def say(self, text="", voice="onyx", audio_path="output.mp3"):
         try:
+            if pygame.mixer.music.get_busy():
+                pygame.mixer.music.stop()
+
             self.gpt.speak(text=text, voice=voice, audio_path=audio_path)
             self.executor.submit(self._play_audio, audio_path)
 
