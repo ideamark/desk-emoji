@@ -1,4 +1,5 @@
 // This is an old version Arduino code for reference only.
+// DO NOT upload to the board, it is not compatible!
 #include <Wire.h>
 #include <Adafruit_SSD1306.h>
 #include <Servo.h>
