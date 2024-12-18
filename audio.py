@@ -41,9 +41,6 @@ class Speaker(object):
 
     def say(self, text="", voice="onyx", audio_path="output.mp3"):
         try:
-            if pygame.mixer.music.get_busy():
-                pygame.mixer.music.stop()
-
             self.gpt.speak(text=text, voice=voice, audio_path=audio_path)
             self.executor.submit(self._play_audio, audio_path)
 
