@@ -1,4 +1,4 @@
-// This is an old version board code for reference only, compatible with Arduino and ESP32.
+// This is an old version Arduino code for reference only.
 #include <Wire.h>
 #include <Adafruit_SSD1306.h>
 #include <Servo.h>
