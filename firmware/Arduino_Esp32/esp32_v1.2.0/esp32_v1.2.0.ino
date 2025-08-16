@@ -28,7 +28,3 @@ void loop() {
 
   delay(10);
 }
-
-// {"factory": "reboot"}
-// {"factory": "adjust_x -10"}   -left, +right
-// {"factory": "adjust_y 20"}    -up, +down

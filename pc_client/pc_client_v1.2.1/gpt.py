@@ -60,6 +60,7 @@ if __name__ == '__main__':
     blt = BluetoothClient()
     llm = GPT()
     llm.connect()
+
     # print(llm.chat("who are you?"))
     # devices = blt.list_devices()
     # if devices:

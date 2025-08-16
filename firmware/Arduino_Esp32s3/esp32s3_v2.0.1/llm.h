@@ -17,10 +17,9 @@ public:
     void stream_chat(String question);
 
 private:
-    const char* API_KEY = "c01bd8a7-4442-4519-9308-4c970c9e7162";
-    const char* API_URL = "https://ark.cn-beijing.volces.com/api/v3/chat/completions";
-    // const char* MODEL = "ep-20250312103859-m4dxf";  // doubao
-    const char* MODEL = "ep-20250324220541-qcnz5";  // deepseek
+    const char* API_KEY = "";
+    const char* API_URL = "";
+    const char* MODEL = "";
 
     const char* HISTORY_FILE = "/chat_history.json";
     const uint8_t MAX_MEM_LEN = 10;
