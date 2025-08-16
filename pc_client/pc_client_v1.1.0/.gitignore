@@ -1,11 +1,14 @@
 .venv/
 __pycache__/
+dist/
+build/
 backup/
-*.log
-*.json
+logs/
+keys.txt
+api.json
+pack.sh
 *.swp
 *.wav
 *.mp3
 *.spec
-*.zip
 Pipfile*

@@ -1,0 +1,14 @@
+setuptools>=68.0.0
+openai>=1.51.2
+langchain>=0.3.3
+pyserial>=3.4
+inquirer>=3.0.0
+SpeechRecognition>=3.10.0
+PyAudio>=0.2.11
+pygame>=2.5.2
+customtkinter>=5.2.2
+pillow>=10.3.0
+bleak>=0.22.3
+esptool>=4.0.0
+httpx>=0.25.0
+typing-extensions>=4.0.0

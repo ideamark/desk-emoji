@@ -1,0 +1,4 @@
+*.py
+.cursorrules
+build/
+.vscode/

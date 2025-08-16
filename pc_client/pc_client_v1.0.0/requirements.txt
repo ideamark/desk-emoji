@@ -1,0 +1,10 @@
+setuptools
+openai == 1.51.2
+langchain == 0.3.3
+pyserial == 3.4
+inquirer
+SpeechRecognition == 3.10.0
+PyAudio
+pygame == 2.5.2
+customtkinter == 5.2.2
+pillow == 10.3.0
